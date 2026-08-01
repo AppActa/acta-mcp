@@ -82,14 +82,6 @@ class CiclosService:
     def ishikawa(self, context: RequestContext, id_ciclo: int, limit: int = 10) -> dict:
         return self._mongo_collection(context, id_ciclo, "ishikawa", limit)
 
-    def perdas_ganhos(
-        self,
-        context: RequestContext,
-        id_ciclo: int,
-        limit: int = 10,
-    ) -> dict:
-        return self._mongo_collection(context, id_ciclo, "perdas_ganhos", limit)
-
     def riscos_pendencias(self, context: RequestContext, id_ciclo: int) -> dict:
         self.access.ensure_cycle(context, id_ciclo)
         empresa_id = context.empresa_id
@@ -127,9 +119,7 @@ class CiclosService:
             "problema_principal": self.problema_principal(context, id_ciclo),
             "causas_raiz": self.causas_raiz(context, id_ciclo),
             "ishikawa": self.ishikawa(context, id_ciclo),
-            "perdas_ganhos": self.perdas_ganhos(context, id_ciclo),
             "riscos_pendencias": self.riscos_pendencias(context, id_ciclo),
             "treinamentos": self.treinamentos(context, id_ciclo),
             "participantes": self.participantes(context, id_ciclo),
         }
-

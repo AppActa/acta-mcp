@@ -18,12 +18,13 @@ O servidor usa Streamable HTTP stateless em `/mcp`, conforme a recomendação do
 
 ## Domínios e tools
 
-- Ciclos: 9 tools.
+- Ciclos: 8 tools.
 - Tarefas: 8 tools.
 - Colaboradores: 10 tools.
+- Formulários: 4 tools.
 - RAG/FAQ: 1 tool.
 
-Total: 28 tools, além dos resources `acta://catalog/tools`, `acta://schema/database` e `acta://documentation`, e dos prompts `analisar_ciclo` e `gerar_relatorio_ciclo`.
+Total: 31 tools, além dos resources `acta://catalog/tools`, `acta://schema/database` e `acta://documentation`, e dos prompts `analisar_ciclo` e `gerar_relatorio_ciclo`.
 
 Não são publicadas tools de SQL livre nem de consulta genérica ao MongoDB.
 
@@ -60,9 +61,9 @@ docker compose up -d --wait
 A suíte executa:
 
 - testes unitários de validação, segurança e recuperação documental;
-- todas as 28 operações contra PostgreSQL e MongoDB locais e Qdrant Cloud;
+- todas as 31 operações contra PostgreSQL e MongoDB locais e Qdrant Cloud;
 - tentativas de acesso a ciclo, tarefa e colaborador de outra empresa;
-- handshake MCP, descoberta das 28 tools e uma chamada real por Streamable HTTP.
+- handshake MCP, descoberta das 31 tools e chamadas reais por Streamable HTTP.
 
 ## Integração com `acta-ai`
 

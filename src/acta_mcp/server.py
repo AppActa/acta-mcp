@@ -20,6 +20,8 @@ from acta_mcp.modules.ciclos.service import CiclosService
 from acta_mcp.modules.colaboradores.repository import ColaboradoresRepository
 from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
+from acta_mcp.modules.formularios.repository import FormulariosRepository
+from acta_mcp.modules.formularios.service import FormulariosService
 from acta_mcp.modules.rag.repository import FaqRepository
 from acta_mcp.modules.rag.service import RagService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
@@ -51,6 +53,7 @@ def create_container(settings: Settings) -> Container:
         mongo,
         access,
     )
+    container.formularios = FormulariosService(FormulariosRepository(mongo), access)
     container.rag = RagService(
         FaqRepository(
             qdrant_client,

@@ -24,6 +24,7 @@ class Container:
     ciclos: object | None = None
     tarefas: object | None = None
     colaboradores: object | None = None
+    formularios: object | None = None
     rag: object | None = None
 
     def close(self) -> None:

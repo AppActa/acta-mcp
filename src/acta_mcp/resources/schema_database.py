@@ -8,7 +8,6 @@ PostgreSQL:
 
 MongoDB (sempre filtrado por id_ciclo e id_empresa):
 - ishikawa
-- perdas_ganhos
 - justificativas_tarefas
 - competencias_colaborador
 - disponibilidade_colaborador
@@ -16,4 +15,3 @@ MongoDB (sempre filtrado por id_ciclo e id_empresa):
 
 Não existe tool de SQL ou MongoDB livre.
 """.strip()
-

@@ -2,7 +2,7 @@
 
 ## Ciclos
 
-`ciclo_visao_geral`, `ciclo_problema_principal`, `ciclo_causas_raiz`, `ciclo_ishikawa`, `ciclo_perdas_ganhos`, `ciclo_riscos_pendencias`, `ciclo_treinamentos`, `ciclo_participantes`, `ciclo_relatorio_completo`.
+`ciclo_visao_geral`, `ciclo_problema_principal`, `ciclo_causas_raiz`, `ciclo_ishikawa`, `ciclo_riscos_pendencias`, `ciclo_treinamentos`, `ciclo_participantes`, `ciclo_relatorio_completo`.
 
 ## Tarefas
 
@@ -17,3 +17,11 @@ Dados pessoais como CPF, nascimento, telefone pessoal e e-mail adicional foram o
 ## RAG
 
 `faq_retriever` usa busca vetorial semântica na collection Qdrant configurada. No startup, o MCP cria a collection quando necessário e sincroniza os documentos `ACTA_DOCS` por identificadores e hashes estáveis. Os embeddings são gerados pelo Qdrant Cloud Inference; o `acta-ai` não mantém mais um índice FAISS local.
+
+## Formulários
+
+`formularios_listar`, `formularios_detalhes`, `formularios_respostas` e
+`formularios_resumo_respostas` leem as collections MongoDB `formularios` e
+`respostas_formulario`. Toda leitura é limitada ao ciclo e à empresa autenticada.
+O resumo calcula campos mais respondidos e valores repetidos, mas não transforma
+correlação ou frequência em causa raiz comprovada.

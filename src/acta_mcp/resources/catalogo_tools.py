@@ -31,6 +31,11 @@ TOOL_CATALOG = {
         "colaboradores_sugestao_realocacao",
         "colaboradores_relatorio_completo",
     ],
+    "formularios": [
+        "formularios_listar",
+        "formularios_detalhes",
+        "formularios_respostas",
+        "formularios_resumo_respostas",
+    ],
     "rag": ["faq_retriever"],
 }
-

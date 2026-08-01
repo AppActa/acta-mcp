@@ -17,7 +17,6 @@ TOOL_ARGUMENTS = {
     "ciclo_problema_principal": {"id_ciclo": 1},
     "ciclo_causas_raiz": {"id_ciclo": 1},
     "ciclo_ishikawa": {"id_ciclo": 1},
-    "ciclo_perdas_ganhos": {"id_ciclo": 1},
     "ciclo_riscos_pendencias": {"id_ciclo": 1},
     "ciclo_treinamentos": {"id_ciclo": 1},
     "ciclo_participantes": {"id_ciclo": 1},
@@ -40,6 +39,10 @@ TOOL_ARGUMENTS = {
     "colaboradores_realocacoes": {"id_ciclo": 1},
     "colaboradores_sugestao_realocacao": {"id_ciclo": 1},
     "colaboradores_relatorio_completo": {"id_ciclo": 1},
+    "formularios_listar": {"id_ciclo": 1},
+    "formularios_detalhes": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
+    "formularios_respostas": {"id_ciclo": 1},
+    "formularios_resumo_respostas": {"id_ciclo": 1},
     "faq_retriever": {"question": "Como funciona o PDCA?"},
 }
 
@@ -95,7 +98,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
                 for name in tools
             }
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 28
+            assert len(expected) == 31
 
             response = await session.call_tool(
                 "tarefas_atrasadas",

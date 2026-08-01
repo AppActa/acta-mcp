@@ -83,6 +83,32 @@ def test_all_form_operations(container, context) -> None:
     )
 
 
+def test_all_report_read_operations(container, context) -> None:
+    service = container.relatorios
+    service.ensure_indexes()
+    operations = [
+        lambda: service.listar(context, id_ciclo=1),
+        lambda: service.detalhes(
+            context,
+            id_ciclo=1,
+            id_relatorio="relatorio-executivo-1-v2",
+        ),
+        lambda: service.mais_recente(context, id_ciclo=1),
+        lambda: service.contexto_ciclo(context, id_ciclo=1),
+    ]
+    for operation in operations:
+        assert_ok(operation())
+
+    listed = service.listar(context, id_ciclo=1)
+    assert listed["count"] == 2
+    assert all("conteudo" not in report for report in listed["relatorios"])
+    latest = service.mais_recente(context, id_ciclo=1)
+    assert latest["relatorio"]["id_relatorio"] == "relatorio-executivo-1-v2"
+    context_result = service.contexto_ciclo(context, id_ciclo=1)
+    assert context_result["somente_leitura"] is True
+    assert "cpf" not in str(context_result).lower()
+
+
 def test_tenant_isolation(container, context) -> None:
     from acta_mcp.core.exceptions import AuthorizationError
 
@@ -100,3 +126,5 @@ def test_tenant_isolation(container, context) -> None:
     assert {row["id_empresa"] for row in forms["formularios"]} == {1}
     responses = container.formularios.respostas(context, id_ciclo=1)
     assert {row["id_empresa"] for row in responses["respostas"]} == {1}
+    reports = container.relatorios.listar(context, id_ciclo=1)
+    assert {row["id_empresa"] for row in reports["relatorios"]} == {1}

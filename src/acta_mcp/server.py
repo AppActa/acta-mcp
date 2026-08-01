@@ -24,6 +24,8 @@ from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
 from acta_mcp.modules.rag.repository import FaqRepository
 from acta_mcp.modules.rag.service import RagService
+from acta_mcp.modules.relatorios.repository import RelatoriosRepository
+from acta_mcp.modules.relatorios.service import RelatoriosService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
 from acta_mcp.modules.tarefas.service import TarefasService
 from acta_mcp.registry import register_all
@@ -54,6 +56,14 @@ def create_container(settings: Settings) -> Container:
         access,
     )
     container.formularios = FormulariosService(FormulariosRepository(mongo), access)
+    container.relatorios = RelatoriosService(
+        RelatoriosRepository(mongo),
+        access,
+        container.ciclos,
+        container.tarefas,
+        container.colaboradores,
+        container.formularios,
+    )
     container.rag = RagService(
         FaqRepository(
             qdrant_client,
@@ -122,6 +132,7 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.postgres_pool.open(wait=True)
         container.postgres.ping()
         container.mongo.ping()
+        container.relatorios.ensure_indexes()
         container.rag.ensure_index()
         try:
             async with mcp_lifespan(starlette_app):

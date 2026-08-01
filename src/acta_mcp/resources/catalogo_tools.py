@@ -37,5 +37,11 @@ TOOL_CATALOG = {
         "formularios_respostas",
         "formularios_resumo_respostas",
     ],
+    "relatorios": [
+        "relatorios_listar",
+        "relatorios_detalhes",
+        "relatorios_mais_recente",
+        "relatorios_contexto_ciclo",
+    ],
     "rag": ["faq_retriever"],
 }

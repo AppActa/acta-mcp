@@ -12,6 +12,8 @@ MongoDB (sempre filtrado por id_ciclo e id_empresa):
 - competencias_colaborador
 - disponibilidade_colaborador
 - realocacoes_colaborador
+- formularios, respostas_formulario
+- relatorios
 
 Não existe tool de SQL ou MongoDB livre.
 """.strip()

@@ -25,3 +25,10 @@ Dados pessoais como CPF, nascimento, telefone pessoal e e-mail adicional foram o
 `respostas_formulario`. Toda leitura é limitada ao ciclo e à empresa autenticada.
 O resumo calcula campos mais respondidos e valores repetidos, mas não transforma
 correlação ou frequência em causa raiz comprovada.
+
+## Relatórios
+
+`relatorios_listar`, `relatorios_detalhes`, `relatorios_mais_recente` e
+`relatorios_contexto_ciclo` são operações somente de leitura. Os três primeiros
+consultam a collection MongoDB `relatorios`; o último consolida evidências atuais
+de ciclos, tarefas, equipe e formulários para o agente produzir o texto.

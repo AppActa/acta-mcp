@@ -1,0 +1,36 @@
+TOOL_CATALOG = {
+    "ciclos": [
+        "ciclo_visao_geral",
+        "ciclo_problema_principal",
+        "ciclo_causas_raiz",
+        "ciclo_ishikawa",
+        "ciclo_riscos_pendencias",
+        "ciclo_treinamentos",
+        "ciclo_participantes",
+        "ciclo_relatorio_completo",
+    ],
+    "tarefas": [
+        "tarefas_consultar",
+        "tarefas_atrasadas",
+        "tarefas_concluidas",
+        "tarefas_detalhes",
+        "tarefas_por_responsavel",
+        "tarefas_alertas_prazo",
+        "tarefas_justificativas",
+        "tarefas_relatorio_completo",
+    ],
+    "colaboradores": [
+        "colaboradores_consultar",
+        "colaborador_detalhes",
+        "colaboradores_participantes_ciclo",
+        "colaboradores_por_area",
+        "colaboradores_carga_trabalho",
+        "colaboradores_competencias",
+        "colaboradores_disponibilidade",
+        "colaboradores_realocacoes",
+        "colaboradores_sugestao_realocacao",
+        "colaboradores_relatorio_completo",
+    ],
+    "rag": ["faq_retriever"],
+}
+

@@ -1,0 +1,2 @@
+"""Componentes transversais do servidor."""
+

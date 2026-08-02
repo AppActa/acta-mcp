@@ -30,6 +30,8 @@ from acta_mcp.modules.rag.repository import FaqRepository
 from acta_mcp.modules.rag.service import RagService
 from acta_mcp.modules.relatorios.repository import RelatoriosRepository
 from acta_mcp.modules.relatorios.service import RelatoriosService
+from acta_mcp.modules.skills.repository import SkillsRepository
+from acta_mcp.modules.skills.service import SkillsService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
 from acta_mcp.modules.tarefas.service import TarefasService
 from acta_mcp.registry import register_all
@@ -90,6 +92,7 @@ def create_container(settings: Settings) -> Container:
             vector_size=settings.qdrant_vector_size,
         )
     )
+    container.skills = SkillsService(SkillsRepository(mongo.database))
     return container
 
 
@@ -153,6 +156,7 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.relatorios.ensure_indexes()
         container.memoria.ensure_indexes()
         container.rag.ensure_index()
+        container.skills.ensure_indexes()
         try:
             async with mcp_lifespan(starlette_app):
                 yield

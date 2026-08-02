@@ -29,6 +29,7 @@ class Container:
     predicoes: object | None = None
     memoria: object | None = None
     rag: object | None = None
+    skills: object | None = None
 
     def close(self) -> None:
         self.postgres_pool.close()

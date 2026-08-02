@@ -197,6 +197,41 @@ def test_memory_isolated_between_users(container, context) -> None:
     service.excluir(context, id_memoria=stored["memoria"]["_id"])
 
 
+def test_personal_skill_lifecycle_and_user_isolation(container, context) -> None:
+    from acta_mcp.core.context import RequestContext
+    from acta_mcp.core.exceptions import NotFoundError
+
+    write_context = RequestContext(
+        usuario_id=context.usuario_id,
+        empresa_id=context.empresa_id,
+        permissoes=frozenset({"read", "write"}),
+        trace_id="skill-owner",
+    )
+    other_user = RequestContext(
+        usuario_id=2,
+        empresa_id=context.empresa_id,
+        permissoes=frozenset({"read", "write"}),
+        trace_id="skill-other-user",
+    )
+    service = container.skills
+    service.ensure_indexes()
+    markdown = (
+        "# Resumo Integração\n\n# objetivo\n\nResumir os resultados encontrados.\n\n"
+        "# regras\n\n- Usar tópicos curtos.\n- Encerrar com próximos passos."
+    )
+
+    created = service.criar(write_context, conteudo_markdown=markdown)
+    assert_ok(created)
+    assert created["skill"]["comando"] == "/resumo-integracao"
+    assert service.obter(write_context, nome="resumo-integracao")["status"] == "ok"
+    with pytest.raises(NotFoundError):
+        service.obter(other_user, nome="resumo-integracao")
+    assert service.listar(other_user)["skills"] == []
+    with pytest.raises(NotFoundError):
+        service.excluir(other_user, nome="resumo-integracao")
+    assert service.excluir(write_context, nome="resumo-integracao")["excluida"] is True
+
+
 def test_tenant_isolation(container, context) -> None:
     from acta_mcp.core.exceptions import AuthorizationError
 

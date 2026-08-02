@@ -60,3 +60,16 @@ Qdrant é somente o índice de busca semântica. Toda operação usa simultaneam
 `usuario_id` e `empresa_id` do contexto autenticado. Mensagens expiram pelo TTL
 configurado; itens explícitos permanecem até exclusão ou até a retenção escolhida
 pelo usuário. Memórias inferidas exigem consentimento no modo `automatica`.
+
+## Skills personalizadas
+
+`skills_criar`, `skills_obter`, `skills_listar` e `skills_excluir` gerenciam skills
+isoladas por `usuario_id` e `empresa_id`. Criação e exclusão exigem permissão `write`.
+
+O conteúdo aceito possui somente três seções: `# nome`, `# objetivo` e `# regras`.
+Quando `# regras` não possui conteúdo, o valor salvo é `Nenhuma regra observada`.
+O parser rejeita código, links, dados pessoais, prompt injection e referências a
+agentes, especialistas, roteador, orquestrador, ferramentas ou tools. A skill é
+revalidada sempre que for carregada, inclusive contra alterações diretas no MongoDB.
+O índice único e todas as operações usam `empresa_id + usuario_id + slug`; skills não
+são compartilhadas entre usuários, mesmo quando possuem o mesmo nome.

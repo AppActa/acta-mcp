@@ -69,4 +69,5 @@ TOOL_CATALOG = {
         "memoria_configurar_consentimento",
     ],
     "rag": ["faq_retriever"],
+    "skills": ["skills_criar", "skills_obter", "skills_listar", "skills_excluir"],
 }

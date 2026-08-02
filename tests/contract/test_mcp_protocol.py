@@ -88,6 +88,15 @@ TOOL_ARGUMENTS = {
     "memoria_obter_consentimento": {},
     "memoria_configurar_consentimento": {"modo": "somente_explicitas"},
     "faq_retriever": {"question": "Como funciona o PDCA?"},
+    "skills_criar": {
+        "conteudo_markdown": (
+            "# Resumo Contratual\n\n# objetivo\n\nResumir os resultados encontrados.\n\n"
+            "# regras\n\n- Usar tópicos curtos.\n- Encerrar com próximos passos."
+        )
+    },
+    "skills_obter": {"nome": "resumo-contratual"},
+    "skills_listar": {},
+    "skills_excluir": {"nome": "resumo-contratual"},
 }
 
 
@@ -138,7 +147,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 56
+            assert len(expected) == 60
 
             response = await session.call_tool(
                 "tarefas_atrasadas",
@@ -154,7 +163,7 @@ async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
     headers = {
         "X-Acta-Usuario-Id": "1",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "read",
+        "X-Acta-Permissoes": "read,write",
     }
     async with streamablehttp_client(mcp_url, headers=headers) as streams:
         read_stream, write_stream, _ = streams

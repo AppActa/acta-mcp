@@ -43,5 +43,17 @@ TOOL_CATALOG = {
         "relatorios_mais_recente",
         "relatorios_contexto_ciclo",
     ],
+    "predicoes": [
+        "predicoes_risco_atraso_tarefa",
+        "predicoes_estimativa_conclusao_tarefa",
+        "predicoes_risco_atraso_ciclo",
+        "predicoes_estimativa_conclusao_ciclo",
+        "predicoes_conclusao_treinamento",
+        "predicoes_sobrecarga_colaborador",
+        "predicoes_atingimento_meta",
+        "predicoes_respostas_atipicas",
+        "predicoes_tema_formulario",
+        "predicoes_recorrencia_problema",
+    ],
     "rag": ["faq_retriever"],
 }

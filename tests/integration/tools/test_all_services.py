@@ -109,6 +109,32 @@ def test_all_report_read_operations(container, context) -> None:
     assert "cpf" not in str(context_result).lower()
 
 
+def test_all_prediction_operations(container, context) -> None:
+    service = container.predicoes
+    operations = [
+        lambda: service.risco_atraso_tarefa(context, id_tarefa=1),
+        lambda: service.estimativa_conclusao_tarefa(context, id_tarefa=1),
+        lambda: service.risco_atraso_ciclo(context, id_ciclo=1),
+        lambda: service.estimativa_conclusao_ciclo(context, id_ciclo=1),
+        lambda: service.conclusao_treinamento(
+            context, id_ciclo=1, id_treinamento=1
+        ),
+        lambda: service.sobrecarga_colaborador(context, id_ciclo=1),
+        lambda: service.atingimento_meta(context, id_ciclo=1),
+        lambda: service.respostas_atipicas(
+            context, id_ciclo=1, id_formulario="fenomeno-1"
+        ),
+        lambda: service.tema_formulario(
+            context, id_ciclo=1, id_formulario="fenomeno-1"
+        ),
+        lambda: service.recorrencia_problema(context, id_ciclo=1),
+    ]
+    for operation in operations:
+        result = operation()
+        assert_ok(result)
+        assert result["previsao_disponivel"] is False
+
+
 def test_tenant_isolation(container, context) -> None:
     from acta_mcp.core.exceptions import AuthorizationError
 

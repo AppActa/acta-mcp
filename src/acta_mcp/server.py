@@ -22,6 +22,8 @@ from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
 from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
+from acta_mcp.modules.predicoes.repository import PredicoesRepository
+from acta_mcp.modules.predicoes.service import PredicoesService
 from acta_mcp.modules.rag.repository import FaqRepository
 from acta_mcp.modules.rag.service import RagService
 from acta_mcp.modules.relatorios.repository import RelatoriosRepository
@@ -64,6 +66,7 @@ def create_container(settings: Settings) -> Container:
         container.colaboradores,
         container.formularios,
     )
+    container.predicoes = PredicoesService(PredicoesRepository(postgres, mongo), access)
     container.rag = RagService(
         FaqRepository(
             qdrant_client,

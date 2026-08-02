@@ -32,3 +32,17 @@ correlação ou frequência em causa raiz comprovada.
 `relatorios_contexto_ciclo` são operações somente de leitura. Os três primeiros
 consultam a collection MongoDB `relatorios`; o último consolida evidências atuais
 de ciclos, tarefas, equipe e formulários para o agente produzir o texto.
+
+## Predições
+
+`predicoes_risco_atraso_tarefa`, `predicoes_estimativa_conclusao_tarefa`,
+`predicoes_risco_atraso_ciclo`, `predicoes_estimativa_conclusao_ciclo`,
+`predicoes_conclusao_treinamento`, `predicoes_sobrecarga_colaborador`,
+`predicoes_atingimento_meta`, `predicoes_respostas_atipicas`,
+`predicoes_tema_formulario` e `predicoes_recorrencia_problema` usam modelos
+scikit-learn treinados apenas com dados históricos da empresa autenticada.
+
+Classificações e regressões exigem amostras mínimas e variação do resultado. Quando
+essas condições não são atendidas, a tool retorna `previsao_disponivel=false` em vez
+de inventar uma probabilidade. Detecção de anomalias indica apenas respostas
+estatisticamente incomuns; não comprova erro ou causa raiz.

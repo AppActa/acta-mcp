@@ -13,4 +13,3 @@ def create_postgres_pool(settings: Settings) -> ConnectionPool:
         kwargs={"row_factory": dict_row, "autocommit": True},
         open=False,
     )
-

@@ -35,9 +35,15 @@ class Settings(BaseSettings):
     qdrant_api_key: str | None = None
     qdrant_cluster_endpoint: str | None = None
     qdrant_collection_name: str = "acta_faq"
+    qdrant_memory_collection_name: str = "acta_memoria"
     qdrant_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     qdrant_vector_size: int = Field(default=384, ge=1)
     qdrant_timeout_seconds: float = Field(default=15, gt=0)
+
+    acta_memory_message_retention_days: int = Field(default=90, ge=1)
+    acta_memory_inferred_retention_days: int = Field(default=90, ge=1)
+    acta_memory_summary_every_messages: int = Field(default=10, ge=2)
+    acta_memory_recent_messages: int = Field(default=8, ge=1, le=50)
 
     @model_validator(mode="after")
     def validate_security(self) -> "Settings":

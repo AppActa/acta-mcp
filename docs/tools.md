@@ -46,3 +46,17 @@ Classificações e regressões exigem amostras mínimas e variação do resultad
 essas condições não são atendidas, a tool retorna `previsao_disponivel=false` em vez
 de inventar uma probabilidade. Detecção de anomalias indica apenas respostas
 estatisticamente incomuns; não comprova erro ou causa raiz.
+
+## Memória
+
+`memoria_garantir_sessao`, `memoria_salvar_mensagem`, `memoria_obter_contexto`,
+`memoria_material_resumo`, `memoria_atualizar_resumo`, `memoria_registrar`,
+`memoria_buscar`, `memoria_listar`, `memoria_excluir`,
+`memoria_obter_consentimento` e `memoria_configurar_consentimento` implementam
+memória persistente entre sessões.
+
+MongoDB é a fonte oficial de sessões, mensagens, consentimentos e itens duráveis.
+Qdrant é somente o índice de busca semântica. Toda operação usa simultaneamente
+`usuario_id` e `empresa_id` do contexto autenticado. Mensagens expiram pelo TTL
+configurado; itens explícitos permanecem até exclusão ou até a retenção escolhida
+pelo usuário. Memórias inferidas exigem consentimento no modo `automatica`.

@@ -1,2 +1,1 @@
 """Auditoria, métricas e tracing."""
-

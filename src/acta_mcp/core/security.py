@@ -15,4 +15,3 @@ def parse_positive_int(value: str | None, *, header: str) -> int:
     if parsed <= 0:
         raise ValueError(f"Header inválido: {header}")
     return parsed
-

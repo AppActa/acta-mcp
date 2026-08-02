@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+from datetime import UTC, datetime
 
 import pytest
 import uvicorn
@@ -60,6 +61,32 @@ TOOL_ARGUMENTS = {
     "predicoes_respostas_atipicas": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
     "predicoes_tema_formulario": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
     "predicoes_recorrencia_problema": {"id_ciclo": 1},
+    "memoria_garantir_sessao": {"session_id": "contract-session"},
+    "memoria_salvar_mensagem": {
+        "session_id": "contract-session",
+        "role": "usuario",
+        "content": "Prefiro respostas objetivas.",
+        "agent": "pytest",
+    },
+    "memoria_obter_contexto": {
+        "session_id": "contract-session",
+        "pergunta": "Como devo responder?",
+    },
+    "memoria_material_resumo": {"session_id": "contract-session"},
+    "memoria_atualizar_resumo": {
+        "session_id": "contract-session",
+        "resumo": "O usuário prefere respostas objetivas.",
+        "resumido_ate": datetime.now(UTC).isoformat(),
+    },
+    "memoria_registrar": {
+        "tipo": "preferencia",
+        "conteudo": "Prefere respostas objetivas",
+        "session_id_origem": "contract-session",
+    },
+    "memoria_buscar": {"pergunta": "Como o usuário prefere as respostas?"},
+    "memoria_listar": {},
+    "memoria_obter_consentimento": {},
+    "memoria_configurar_consentimento": {"modo": "somente_explicitas"},
     "faq_retriever": {"question": "Como funciona o PDCA?"},
 }
 
@@ -109,13 +136,9 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
             listed = await session.list_tools()
-            expected = {
-                name
-                for tools in TOOL_CATALOG.values()
-                for name in tools
-            }
+            expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 45
+            assert len(expected) == 56
 
             response = await session.call_tool(
                 "tarefas_atrasadas",
@@ -142,3 +165,10 @@ async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
                 assert not response.isError, tool_name
                 assert response.structuredContent is not None, tool_name
                 assert response.structuredContent["status"] == "ok", tool_name
+
+            listed_memories = await session.call_tool("memoria_listar", {})
+            memories = listed_memories.structuredContent["memorias"]
+            assert memories
+            deleted = await session.call_tool("memoria_excluir", {"id_memoria": memories[0]["_id"]})
+            assert deleted.structuredContent["status"] == "ok"
+            assert deleted.structuredContent["excluida"] is True

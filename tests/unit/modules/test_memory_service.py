@@ -1,0 +1,139 @@
+from datetime import UTC, datetime
+
+from acta_mcp.core.context import RequestContext
+from acta_mcp.modules.memoria.service import MemoryService
+
+
+class FakeMemoryRepository:
+    def __init__(self) -> None:
+        self.consent = {"modo": "somente_explicitas", "retencao_dias": None}
+        self.memories = []
+        self.summary = ""
+
+    def ensure_session(self, context, session_id, metadata=None):
+        return {"session_id": session_id, "resumo": self.summary}
+
+    def add_message(self, context, **kwargs):
+        return {"_id": "message-1", **kwargs}
+
+    def session_context(self, context, session_id, limit):
+        return (
+            {"session_id": session_id, "resumo": self.summary},
+            [{"role": "usuario", "content": "Prefiro respostas curtas", "agent": None}],
+        )
+
+    def summary_material(self, context, session_id):
+        messages = [
+            {
+                "role": "usuario",
+                "content": f"Mensagem {index}",
+                "criada_em": datetime.now(UTC).isoformat(),
+            }
+            for index in range(4)
+        ]
+        return {"session_id": session_id, "resumo": self.summary}, messages
+
+    def update_summary(self, context, session_id, summary, summarized_until):
+        self.summary = summary
+
+    def get_consent(self, context):
+        return self.consent
+
+    def set_consent(self, context, modo, retencao_dias):
+        self.consent = {"modo": modo, "retencao_dias": retencao_dias}
+        return self.consent
+
+    def store_memory(self, context, data):
+        if self.consent["modo"] == "desativado":
+            return None
+        if data["origem"] == "inferida" and self.consent["modo"] != "automatica":
+            return None
+        item = {"_id": f"memory-{len(self.memories) + 1}", **data}
+        self.memories.append(item)
+        return item
+
+    def list_memories(self, context, *, tipo, limit):
+        return [item for item in self.memories if tipo is None or item["tipo"] == tipo][:limit]
+
+    def semantic_search(self, context, query, limit):
+        return self.memories[:limit]
+
+    def delete_memory(self, context, memory_id):
+        return True
+
+
+CONTEXT = RequestContext(
+    usuario_id=7,
+    empresa_id=3,
+    permissoes=frozenset({"read"}),
+    trace_id="memory-test",
+)
+
+
+def test_context_combines_summary_preferences_and_recent_messages() -> None:
+    repository = FakeMemoryRepository()
+    repository.summary = "Resumo acumulado"
+    repository.memories.append(
+        {"_id": "memory-1", "tipo": "preferencia", "conteudo": "Respostas curtas"}
+    )
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=4)
+
+    result = service.obter_contexto(CONTEXT, session_id="session-1", pergunta="Como responder?")
+
+    assert result["status"] == "ok"
+    assert "Resumo acumulado" in result["contexto"]
+    assert "Respostas curtas" in result["contexto"]
+    assert "Últimas mensagens" in result["contexto"]
+
+
+def test_inferred_memory_requires_automatic_consent() -> None:
+    repository = FakeMemoryRepository()
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=4)
+
+    blocked = service.registrar(
+        CONTEXT,
+        tipo="ponto_relevante",
+        conteudo="Há uma pendência",
+        origem="inferida",
+    )
+    assert blocked["salva"] is False
+
+    service.configurar_consentimento(CONTEXT, modo="automatica")
+    stored = service.registrar(
+        CONTEXT,
+        tipo="ponto_relevante",
+        conteudo="Há uma pendência",
+        origem="inferida",
+    )
+    assert stored["salva"] is True
+
+
+def test_summary_is_incremental_and_threshold_based() -> None:
+    service = MemoryService(FakeMemoryRepository(), recent_messages=8, summary_every_messages=4)
+
+    material = service.material_resumo(CONTEXT, session_id="session-1")
+
+    assert material["deve_resumir"] is True
+    assert material["resumido_ate"] is not None
+    assert "Mensagem 3" in material["conversa_formatada"]
+
+
+def test_disabled_consent_stops_session_persistence_and_retrieval() -> None:
+    repository = FakeMemoryRepository()
+    repository.consent = {"modo": "desativado", "retencao_dias": None}
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=4)
+
+    session = service.garantir_sessao(CONTEXT, session_id="session-1")
+    message = service.salvar_mensagem(
+        CONTEXT,
+        session_id="session-1",
+        role="usuario",
+        content="Não persista isto",
+        agent="pytest",
+        metadata={},
+    )
+    context = service.obter_contexto(CONTEXT, session_id="session-1", pergunta="O que foi dito?")
+
+    assert session["persistencia_ativa"] is False
+    assert message["salva"] is False
+    assert context["contexto"] == ""

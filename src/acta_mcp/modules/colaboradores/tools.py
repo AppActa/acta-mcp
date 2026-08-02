@@ -17,8 +17,7 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         nome: str | None = None,
         area: str | None = None,
         cargo: str | None = None,
-        status: Literal["ATIVO", "INATIVO", "PENDENTE", "BLOQUEADO", "ARQUIVADO"]
-        | None = None,
+        status: Literal["ATIVO", "INATIVO", "PENDENTE", "BLOQUEADO", "ARQUIVADO"] | None = None,
         tipo_usuario: Literal["ADMIN", "GESTOR", "COLABORADOR"] | None = None,
         permissao_gestor: bool | None = None,
         limit: int = 50,

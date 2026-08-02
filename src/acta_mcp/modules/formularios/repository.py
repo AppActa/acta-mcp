@@ -118,9 +118,7 @@ class FormulariosRepository:
             ]
         }
         authorized_ids = {
-            identifier
-            for form in formularios
-            if (identifier := document_form_id(form)) is not None
+            identifier for form in formularios if (identifier := document_form_id(form)) is not None
         }
         if id_formulario is not None:
             authorized_ids = {id_formulario}
@@ -128,17 +126,10 @@ class FormulariosRepository:
         scopes: list[dict[str, Any]] = [direct_scope]
         if authorized_ids:
             variants = [
-                value
-                for identifier in authorized_ids
-                for value in _identifier_variants(identifier)
+                value for identifier in authorized_ids for value in _identifier_variants(identifier)
             ]
             scopes.append(
-                {
-                    "$or": [
-                        {field: {"$in": variants}}
-                        for field in RESPONSE_FORM_ID_FIELDS
-                    ]
-                }
+                {"$or": [{field: {"$in": variants}} for field in RESPONSE_FORM_ID_FIELDS]}
             )
 
         query: dict[str, Any] = {"$or": scopes}

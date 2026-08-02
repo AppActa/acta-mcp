@@ -19,4 +19,3 @@ def register_prompts(mcp: FastMCP) -> None:
             "com resumo executivo, evidências, riscos, responsáveis e próximos passos. "
             "Diferencie fatos retornados pelas tools de recomendações."
         )
-

@@ -47,4 +47,3 @@ class MongoRepository:
 
     def ping(self) -> bool:
         return bool(self.database.client.admin.command("ping").get("ok"))
-

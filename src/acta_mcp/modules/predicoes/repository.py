@@ -268,17 +268,11 @@ class PredicoesRepository:
             forms = [
                 form
                 for form in forms
-                if str(
-                    form.get("id_formulario")
-                    or form.get("formulario_id")
-                    or form.get("_id")
-                )
+                if str(form.get("id_formulario") or form.get("formulario_id") or form.get("_id"))
                 == id_formulario
             ]
         responses = list(
-            self.database["respostas_formulario"]
-            .find({"$and": response_clauses})
-            .limit(limit)
+            self.database["respostas_formulario"].find({"$and": response_clauses}).limit(limit)
         )
         return serialize(forms), serialize(responses)
 

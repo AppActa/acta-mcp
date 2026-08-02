@@ -304,4 +304,3 @@ class CiclosRepository:
             """,
             (id_ciclo, empresa_id),
         )
-

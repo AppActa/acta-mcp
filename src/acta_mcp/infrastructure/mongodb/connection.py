@@ -9,4 +9,3 @@ def create_mongo_client(settings: Settings) -> MongoClient:
         serverSelectionTimeoutMS=settings.acta_mongo_timeout_ms,
         connect=False,
     )
-

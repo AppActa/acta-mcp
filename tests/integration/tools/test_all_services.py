@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 pytestmark = pytest.mark.integration
@@ -116,23 +118,83 @@ def test_all_prediction_operations(container, context) -> None:
         lambda: service.estimativa_conclusao_tarefa(context, id_tarefa=1),
         lambda: service.risco_atraso_ciclo(context, id_ciclo=1),
         lambda: service.estimativa_conclusao_ciclo(context, id_ciclo=1),
-        lambda: service.conclusao_treinamento(
-            context, id_ciclo=1, id_treinamento=1
-        ),
+        lambda: service.conclusao_treinamento(context, id_ciclo=1, id_treinamento=1),
         lambda: service.sobrecarga_colaborador(context, id_ciclo=1),
         lambda: service.atingimento_meta(context, id_ciclo=1),
-        lambda: service.respostas_atipicas(
-            context, id_ciclo=1, id_formulario="fenomeno-1"
-        ),
-        lambda: service.tema_formulario(
-            context, id_ciclo=1, id_formulario="fenomeno-1"
-        ),
+        lambda: service.respostas_atipicas(context, id_ciclo=1, id_formulario="fenomeno-1"),
+        lambda: service.tema_formulario(context, id_ciclo=1, id_formulario="fenomeno-1"),
         lambda: service.recorrencia_problema(context, id_ciclo=1),
     ]
     for operation in operations:
         result = operation()
         assert_ok(result)
         assert result["previsao_disponivel"] is False
+
+
+def test_persistent_memory_lifecycle(container, context) -> None:
+    service = container.memoria
+    service.ensure_indexes()
+    session_id = f"pytest-{uuid4()}"
+    assert_ok(service.garantir_sessao(context, session_id=session_id))
+    assert_ok(
+        service.salvar_mensagem(
+            context,
+            session_id=session_id,
+            role="usuario",
+            content="Prefiro respostas curtas. email@example.com",
+            agent="pytest",
+            metadata={},
+        )
+    )
+    stored = service.registrar(
+        context,
+        tipo="preferencia",
+        conteudo=f"Prefere respostas curtas ({session_id})",
+        origem="explicita",
+        session_id_origem=session_id,
+    )
+    assert stored["salva"] is True
+    memory_id = stored["memoria"]["_id"]
+
+    result = service.obter_contexto(
+        context,
+        session_id=session_id,
+        pergunta="Qual o formato de resposta preferido?",
+    )
+    assert_ok(result)
+    assert "Prefere respostas curtas" in result["contexto"]
+    assert "email@example.com" not in result["contexto"]
+    assert "[EMAIL OMITIDO]" in result["contexto"]
+
+    assert service.excluir(context, id_memoria=memory_id)["excluida"] is True
+
+
+def test_memory_isolated_between_users(container, context) -> None:
+    from acta_mcp.core.context import RequestContext
+    from acta_mcp.core.exceptions import AuthorizationError
+
+    service = container.memoria
+    session_id = f"tenant-memory-{uuid4()}"
+    other = RequestContext(
+        usuario_id=2,
+        empresa_id=context.empresa_id,
+        permissoes=context.permissoes,
+        trace_id="other-memory-user",
+    )
+    service.garantir_sessao(context, session_id=session_id)
+    stored = service.registrar(
+        context,
+        tipo="objetivo",
+        conteudo=f"Objetivo privado {session_id}",
+        origem="explicita",
+        session_id_origem=session_id,
+    )
+
+    with pytest.raises(AuthorizationError):
+        service.garantir_sessao(other, session_id=session_id)
+    assert service.buscar(other, pergunta=session_id)["memorias"] == []
+
+    service.excluir(context, id_memoria=stored["memoria"]["_id"])
 
 
 def test_tenant_isolation(container, context) -> None:

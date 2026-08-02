@@ -199,9 +199,7 @@ class FormulariosService:
             limit=1,
         )["formularios"]
         if not forms:
-            raise NotFoundError(
-                f"Nenhum formulário autorizado encontrado com id {id_formulario}."
-            )
+            raise NotFoundError(f"Nenhum formulário autorizado encontrado com id {id_formulario}.")
         return {
             "status": "ok",
             "id_ciclo": id_ciclo,

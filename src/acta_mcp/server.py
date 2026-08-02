@@ -22,6 +22,8 @@ from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
 from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
+from acta_mcp.modules.memoria.repository import MemoryRepository
+from acta_mcp.modules.memoria.service import MemoryService
 from acta_mcp.modules.predicoes.repository import PredicoesRepository
 from acta_mcp.modules.predicoes.service import PredicoesService
 from acta_mcp.modules.rag.repository import FaqRepository
@@ -58,6 +60,19 @@ def create_container(settings: Settings) -> Container:
         access,
     )
     container.formularios = FormulariosService(FormulariosRepository(mongo), access)
+    container.memoria = MemoryService(
+        MemoryRepository(
+            mongo.database,
+            qdrant_client,
+            collection_name=settings.qdrant_memory_collection_name,
+            embedding_model=settings.qdrant_embedding_model,
+            vector_size=settings.qdrant_vector_size,
+            message_retention_days=settings.acta_memory_message_retention_days,
+            inferred_retention_days=settings.acta_memory_inferred_retention_days,
+        ),
+        recent_messages=settings.acta_memory_recent_messages,
+        summary_every_messages=settings.acta_memory_summary_every_messages,
+    )
     container.relatorios = RelatoriosService(
         RelatoriosRepository(mongo),
         access,
@@ -136,6 +151,7 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.postgres.ping()
         container.mongo.ping()
         container.relatorios.ensure_indexes()
+        container.memoria.ensure_indexes()
         container.rag.ensure_index()
         try:
             async with mcp_lifespan(starlette_app):

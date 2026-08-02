@@ -40,4 +40,3 @@ class AuditLogger:
             "empresa_id": context.empresa_id,
             "duration_ms": round((perf_counter() - started) * 1000, 2),
         }
-

@@ -239,4 +239,3 @@ class ColaboradoresService:
                 limit=min(limit, 100),
             ),
         }
-

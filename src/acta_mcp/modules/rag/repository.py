@@ -11,9 +11,7 @@ DATASET_NAME = "ACTA_DOCS"
 
 
 def format_document(document: dict[str, Any]) -> str:
-    questions = "\n".join(
-        f"- {question}" for question in document.get("example_questions", [])
-    )
+    questions = "\n".join(f"- {question}" for question in document.get("example_questions", []))
     return (
         f"# {document.get('title', '')}\n\n"
         f"Seção: {document.get('section', '')}\n"
@@ -59,8 +57,7 @@ class FaqRepository:
             with_vectors=False,
         )
         existing_hashes = {
-            str(point.id): (point.payload or {}).get("content_hash")
-            for point in existing_points
+            str(point.id): (point.payload or {}).get("content_hash") for point in existing_points
         }
         changed = [
             record
@@ -129,9 +126,7 @@ class FaqRepository:
     def _record(self, document: dict[str, Any]) -> dict[str, Any]:
         document_id = str(document.get("id", "acta_doc"))
         embedding_text = format_document(document)
-        content_hash = sha256(
-            f"{self.embedding_model}\0{embedding_text}".encode()
-        ).hexdigest()
+        content_hash = sha256(f"{self.embedding_model}\0{embedding_text}".encode()).hexdigest()
         return {
             "id": str(uuid5(FAQ_NAMESPACE, document_id)),
             "embedding_text": embedding_text,

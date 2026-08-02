@@ -27,6 +27,7 @@ class Container:
     formularios: object | None = None
     relatorios: object | None = None
     predicoes: object | None = None
+    memoria: object | None = None
     rag: object | None = None
 
     def close(self) -> None:

@@ -40,9 +40,7 @@ def build_context(
     trace_id: str | None = None,
 ) -> RequestContext:
     parsed_permissions = frozenset(
-        permission.strip()
-        for permission in (permissoes or "read").split(",")
-        if permission.strip()
+        permission.strip() for permission in (permissoes or "read").split(",") if permission.strip()
     )
     return RequestContext(
         usuario_id=usuario_id,
@@ -50,4 +48,3 @@ def build_context(
         permissoes=parsed_permissions,
         trace_id=trace_id or str(uuid4()),
     )
-

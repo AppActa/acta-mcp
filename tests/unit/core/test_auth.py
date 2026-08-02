@@ -37,11 +37,11 @@ async def invoke(app, headers: dict[str, str]) -> tuple[int, bytes]:
         messages.append(message)
 
     await app(scope, receive, send)
-    status = next(message["status"] for message in messages if message["type"] == "http.response.start")
+    status = next(
+        message["status"] for message in messages if message["type"] == "http.response.start"
+    )
     body = b"".join(
-        message.get("body", b"")
-        for message in messages
-        if message["type"] == "http.response.body"
+        message.get("body", b"") for message in messages if message["type"] == "http.response.body"
     )
     return status, body
 
@@ -73,4 +73,3 @@ async def test_authentication_requires_token_and_identity_headers() -> None:
     )
     assert status == 200
     assert body == b"7:3"
-

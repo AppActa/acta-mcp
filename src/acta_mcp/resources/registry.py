@@ -22,4 +22,3 @@ def register_resources(mcp: FastMCP, container: Container) -> None:
     def acta_documentation() -> str:
         """Documentação conceitual autorizada do ACTA."""
         return json.dumps(container.rag.documentation(), ensure_ascii=False)
-

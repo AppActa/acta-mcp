@@ -39,4 +39,3 @@ class TarefasJustificativas(BaseModel):
     id_ciclo: int = Field(gt=0)
     id_tarefa: int | None = Field(default=None, gt=0)
     limit: int = Field(default=20, ge=1, le=200)
-

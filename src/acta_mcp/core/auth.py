@@ -11,7 +11,11 @@ from acta_mcp.core.context import (
 from acta_mcp.core.security import constant_time_equals, parse_positive_int
 
 ASGIApp = Callable[
-    [dict[str, Any], Callable[[], Awaitable[dict[str, Any]]], Callable[[dict[str, Any]], Awaitable[None]]],
+    [
+        dict[str, Any],
+        Callable[[], Awaitable[dict[str, Any]]],
+        Callable[[dict[str, Any]], Awaitable[None]],
+    ],
     Awaitable[None],
 ]
 
@@ -96,4 +100,3 @@ class ActaAuthenticationMiddleware:
             }
         )
         await send({"type": "http.response.body", "body": body})
-

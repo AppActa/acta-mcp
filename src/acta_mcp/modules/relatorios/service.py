@@ -117,9 +117,7 @@ class RelatoriosService:
             id_relatorio=payload.id_relatorio,
         )
         if report is None:
-            raise NotFoundError(
-                f"Nenhum relatório autorizado encontrado com id {id_relatorio}."
-            )
+            raise NotFoundError(f"Nenhum relatório autorizado encontrado com id {id_relatorio}.")
         return {"status": "ok", "relatorio": _omit_sensitive(report)}
 
     def mais_recente(

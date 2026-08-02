@@ -176,4 +176,3 @@ class TarefasService:
                 limit=min(limit, 20),
             ),
         }
-

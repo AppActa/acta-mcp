@@ -24,4 +24,3 @@ def test_security_helpers() -> None:
     assert parse_positive_int("12", header="X-Test") == 12
     with pytest.raises(ValueError):
         parse_positive_int("0", header="X-Test")
-

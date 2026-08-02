@@ -286,4 +286,3 @@ class ColaboradoresRepository:
         """
         params.append(limit)
         return self.postgres.fetch_all(query, params)
-

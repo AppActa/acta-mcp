@@ -17,4 +17,3 @@ def serialize(value: Any) -> Any:
     if isinstance(value, ObjectId):
         return str(value)
     return value
-

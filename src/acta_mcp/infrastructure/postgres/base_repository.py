@@ -23,4 +23,3 @@ class PostgresRepository:
 
     def ping(self) -> bool:
         return self.fetch_one("SELECT TRUE AS ok;") == {"ok": True}
-

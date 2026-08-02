@@ -36,4 +36,3 @@ def execute_tool(
             "message": "Não foi possível concluir a operação.",
             "trace_id": context.trace_id,
         }
-

@@ -1,2 +1,1 @@
 """Infraestrutura PostgreSQL."""
-

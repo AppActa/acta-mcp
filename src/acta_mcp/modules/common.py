@@ -96,4 +96,3 @@ class AccessService:
             raise NotFoundError(f"Nenhum colaborador encontrado com id {id_colaborador}.")
         if row["id_empresa"] != context.empresa_id:
             raise AuthorizationError("O usuário não possui acesso a este colaborador.")
-

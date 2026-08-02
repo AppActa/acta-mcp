@@ -16,4 +16,3 @@ class NotFoundError(ActaMCPError):
 
 class InvalidInputError(ActaMCPError):
     pass
-

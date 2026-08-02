@@ -214,4 +214,3 @@ class TarefasRepository:
             query += " AND a.lido_em IS NULL"
         query += " ORDER BY a.lido_em NULLS FIRST, a.enviado_em DESC;"
         return self.postgres.fetch_all(query, (id_ciclo, empresa_id))
-

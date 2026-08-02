@@ -1,2 +1,1 @@
 """Domínio de ciclos PDCA."""
-

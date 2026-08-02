@@ -55,5 +55,18 @@ TOOL_CATALOG = {
         "predicoes_tema_formulario",
         "predicoes_recorrencia_problema",
     ],
+    "memoria": [
+        "memoria_garantir_sessao",
+        "memoria_salvar_mensagem",
+        "memoria_obter_contexto",
+        "memoria_material_resumo",
+        "memoria_atualizar_resumo",
+        "memoria_registrar",
+        "memoria_buscar",
+        "memoria_listar",
+        "memoria_excluir",
+        "memoria_obter_consentimento",
+        "memoria_configurar_consentimento",
+    ],
     "rag": ["faq_retriever"],
 }

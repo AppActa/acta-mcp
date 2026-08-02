@@ -68,9 +68,13 @@ def binary_predictions(
     if len(features) < minimum:
         return unavailable("Histórico insuficiente para classificação.", len(features), minimum)
     if len(set(targets)) < 2:
-        return unavailable("O histórico possui apenas uma classe de resultado.", len(features), minimum)
+        return unavailable(
+            "O histórico possui apenas uma classe de resultado.", len(features), minimum
+        )
     if min(targets.count(0), targets.count(1)) < 3:
-        return unavailable("Uma das classes possui menos de três resultados.", len(features), minimum)
+        return unavailable(
+            "Uma das classes possui menos de três resultados.", len(features), minimum
+        )
 
     use_boosting = len(features) >= 50 and min(targets.count(0), targets.count(1)) >= 10
     estimator = (
@@ -182,7 +186,9 @@ def anomaly_detection(texts: list[str]) -> dict[str, Any]:
     try:
         matrix = vectorizer.fit_transform(usable)
     except ValueError:
-        return unavailable("As respostas não contêm texto analisável.", len(usable), MIN_ANOMALY_SAMPLES)
+        return unavailable(
+            "As respostas não contêm texto analisável.", len(usable), MIN_ANOMALY_SAMPLES
+        )
     model = IsolationForest(random_state=42, contamination="auto")
     labels = model.fit_predict(matrix)
     scores = -model.decision_function(matrix)

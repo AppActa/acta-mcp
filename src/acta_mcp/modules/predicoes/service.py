@@ -113,9 +113,7 @@ class PredicoesService:
         self.repository = repository
         self.access = access
 
-    def risco_atraso_tarefa(
-        self, context: RequestContext, *, id_tarefa: int
-    ) -> dict[str, Any]:
+    def risco_atraso_tarefa(self, context: RequestContext, *, id_tarefa: int) -> dict[str, Any]:
         payload = TarefaPredicao(id_tarefa=id_tarefa)
         self.access.ensure_task(context, payload.id_tarefa)
         current = self.repository.task_current(payload.id_tarefa, context.empresa_id)
@@ -169,9 +167,7 @@ class PredicoesService:
             )
         return response
 
-    def risco_atraso_ciclo(
-        self, context: RequestContext, *, id_ciclo: int
-    ) -> dict[str, Any]:
+    def risco_atraso_ciclo(self, context: RequestContext, *, id_ciclo: int) -> dict[str, Any]:
         payload = CicloPredicao(id_ciclo=id_ciclo)
         self.access.ensure_cycle(context, payload.id_ciclo)
         current = self.repository.cycle_current(payload.id_ciclo, context.empresa_id)
@@ -339,9 +335,7 @@ class PredicoesService:
             if predictions:
                 item.update(predictions[index])
                 item["probabilidade_atingimento"] = item.pop("probabilidade")
-                item["risco_nao_atingimento"] = round(
-                    1 - item["probabilidade_atingimento"], 6
-                )
+                item["risco_nao_atingimento"] = round(1 - item["probabilidade_atingimento"], 6)
             goals.append(item)
         return {"status": "ok", "id_ciclo": payload.id_ciclo, "metas": goals, **prediction}
 
@@ -353,9 +347,7 @@ class PredicoesService:
         id_formulario: str,
         limit: int = 200,
     ) -> dict[str, Any]:
-        payload = FormularioPredicao(
-            id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit
-        )
+        payload = FormularioPredicao(id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit)
         self.access.ensure_cycle(context, payload.id_ciclo)
         _, responses = self.repository.form_documents(
             empresa_id=context.empresa_id,
@@ -384,9 +376,7 @@ class PredicoesService:
         id_formulario: str,
         limit: int = 200,
     ) -> dict[str, Any]:
-        payload = FormularioPredicao(
-            id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit
-        )
+        payload = FormularioPredicao(id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit)
         self.access.ensure_cycle(context, payload.id_ciclo)
         training_forms, training_responses = self.repository.form_documents(
             empresa_id=context.empresa_id,

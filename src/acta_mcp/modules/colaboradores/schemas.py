@@ -27,4 +27,3 @@ class RealocacaoSugestao(BaseModel):
     cargo: str | None = None
     competencia: str | None = None
     limit: int = Field(default=20, ge=1, le=100)
-

@@ -124,31 +124,91 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
             operation=lambda: service.alertas(context, id_ciclo, somente_nao_lidos),
         )
 
-    @mcp.tool(name="tarefas_justificativas", structured_output=True)
-    def tarefas_justificativas(
-        id_ciclo: int,
-        id_tarefa: int | None = None,
-        limit: int = 20,
-    ) -> dict[str, Any]:
-        """Consulta justificativas de tarefas registradas no MongoDB."""
-        context = get_request_context()
-        return execute_tool(
-            name="tarefas_justificativas",
-            audit=audit,
-            operation=lambda: service.justificativas(
-                context,
-                id_ciclo=id_ciclo,
-                id_tarefa=id_tarefa,
-                limit=limit,
-            ),
-        )
-
     @mcp.tool(name="tarefas_relatorio_completo", structured_output=True)
     def tarefas_relatorio_completo(id_ciclo: int, limit: int = 50) -> dict[str, Any]:
-        """Consolida tarefas, atrasos, responsáveis, alertas e justificativas."""
+        """Consolida tarefas, atrasos, responsáveis e alertas de prazo."""
         context = get_request_context()
         return execute_tool(
             name="tarefas_relatorio_completo",
             audit=audit,
             operation=lambda: service.relatorio(context, id_ciclo, limit),
+        )
+
+    @mcp.tool(name="tarefas_criar", structured_output=True)
+    def tarefas_criar(
+        id_ciclo: int,
+        id_plano_acao: int,
+        id_responsavel: int,
+        titulo: str,
+        descricao: str,
+        data_fim_prevista: date,
+        prioridade: Literal["BAIXA", "MEDIA", "ALTA", "CRITICA"] = "MEDIA",
+    ) -> dict[str, Any]:
+        """Cria uma tarefa pendente em um plano de ação autorizado."""
+        context = get_request_context()
+        return execute_tool(
+            name="tarefas_criar",
+            audit=audit,
+            minimum_access="create",
+            operation=lambda: service.criar(
+                context,
+                id_ciclo=id_ciclo,
+                id_plano_acao=id_plano_acao,
+                id_responsavel=id_responsavel,
+                titulo=titulo,
+                descricao=descricao,
+                prioridade=prioridade,
+                data_fim_prevista=data_fim_prevista,
+            ),
+        )
+
+    @mcp.tool(name="tarefas_atualizar", structured_output=True)
+    def tarefas_atualizar(
+        id_tarefa: int,
+        titulo: str | None = None,
+        descricao: str | None = None,
+        id_responsavel: int | None = None,
+        prioridade: Literal["BAIXA", "MEDIA", "ALTA", "CRITICA"] | None = None,
+        data_fim_prevista: date | None = None,
+    ) -> dict[str, Any]:
+        """Atualiza campos permitidos de uma tarefa autorizada."""
+        context = get_request_context()
+        return execute_tool(
+            name="tarefas_atualizar",
+            audit=audit,
+            minimum_access="create",
+            operation=lambda: service.atualizar(
+                context,
+                id_tarefa=id_tarefa,
+                titulo=titulo,
+                descricao=descricao,
+                id_responsavel=id_responsavel,
+                prioridade=prioridade,
+                data_fim_prevista=data_fim_prevista,
+            ),
+        )
+
+    @mcp.tool(name="tarefas_atualizar_status", structured_output=True)
+    def tarefas_atualizar_status(
+        id_tarefa: int,
+        status: Literal[
+            "PENDENTE",
+            "EM_ANDAMENTO",
+            "BLOQUEADA",
+            "CONCLUIDA",
+            "ATRASADA",
+            "CANCELADA",
+        ],
+    ) -> dict[str, Any]:
+        """Atualiza o status e as datas operacionais de uma tarefa."""
+        context = get_request_context()
+        return execute_tool(
+            name="tarefas_atualizar_status",
+            audit=audit,
+            minimum_access="create",
+            operation=lambda: service.atualizar_status(
+                context,
+                id_tarefa=id_tarefa,
+                status=status,
+            ),
         )

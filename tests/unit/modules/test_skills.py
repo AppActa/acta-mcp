@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 
 from acta_mcp.core.context import RequestContext
-from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
+from acta_mcp.core.exceptions import NotFoundError
 from acta_mcp.modules.skills.compiler import parse_skill_markdown
 from acta_mcp.modules.skills.service import SkillsService
 
@@ -140,7 +140,7 @@ def test_service_is_user_scoped_and_revalidates_on_read(write_context) -> None:
         service.obter(write_context, nome="resumo-executivo")
 
 
-def test_writes_require_write_permission(write_context) -> None:
+def test_skill_creation_is_available_at_read_level(write_context) -> None:
     service = SkillsService(FakeRepository())
     read_only = RequestContext(
         usuario_id=write_context.usuario_id,
@@ -149,5 +149,6 @@ def test_writes_require_write_permission(write_context) -> None:
         trace_id="read-only",
     )
 
-    with pytest.raises(AuthorizationError):
-        service.criar(read_only, conteudo_markdown=SAFE_SKILL)
+    created = service.criar(read_only, conteudo_markdown=SAFE_SKILL)
+
+    assert created["status"] == "ok"

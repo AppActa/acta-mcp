@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -11,8 +12,18 @@ def register_predicao_tools(mcp: FastMCP, container: Container) -> None:
     service = container.predicoes
     audit = container.audit
 
-    def run(name: str, operation) -> dict[str, Any]:
-        return execute_tool(name=name, audit=audit, operation=operation)
+    def run(
+        name: str,
+        operation: Callable[[], dict[str, Any]],
+        *,
+        minimum_access: str = "read",
+    ) -> dict[str, Any]:
+        return execute_tool(
+            name=name,
+            audit=audit,
+            operation=operation,
+            minimum_access=minimum_access,
+        )
 
     @mcp.tool(name="predicoes_risco_atraso_tarefa", structured_output=True)
     def risco_atraso_tarefa(id_tarefa: int) -> dict[str, Any]:
@@ -94,6 +105,7 @@ def register_predicao_tools(mcp: FastMCP, container: Container) -> None:
         context = get_request_context()
         return run(
             name="predicoes_respostas_atipicas",
+            minimum_access="geral",
             operation=lambda: service.respostas_atipicas(
                 context, id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit
             ),
@@ -109,6 +121,7 @@ def register_predicao_tools(mcp: FastMCP, container: Container) -> None:
         context = get_request_context()
         return run(
             name="predicoes_tema_formulario",
+            minimum_access="geral",
             operation=lambda: service.tema_formulario(
                 context, id_ciclo=id_ciclo, id_formulario=id_formulario, limit=limit
             ),

@@ -78,7 +78,7 @@ CREATE TABLE pdca.plano_acao (
 );
 
 CREATE TABLE pdca.tarefa (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     id_plano_acao BIGINT NOT NULL REFERENCES pdca.plano_acao(id),
     id_responsavel BIGINT NOT NULL REFERENCES usuario_sistema(id),
     titulo TEXT NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE pdca.problema (
 );
 
 CREATE TABLE pdca.causa_raiz (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     id_ciclo BIGINT NOT NULL REFERENCES pdca.ciclo(id),
     id_problema BIGINT NOT NULL REFERENCES pdca.problema(id),
     id_plano_acao BIGINT REFERENCES pdca.plano_acao(id),
@@ -137,7 +137,7 @@ CREATE TABLE pdca.alerta_prazo (
 );
 
 CREATE TABLE pdca.treinamento (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     id_ciclo BIGINT NOT NULL REFERENCES pdca.ciclo(id),
     id_responsavel BIGINT NOT NULL REFERENCES usuario_sistema(id),
     titulo TEXT NOT NULL,
@@ -252,3 +252,12 @@ INSERT INTO pdca.usuario_ciclo VALUES
 
 INSERT INTO pdca.tarefa_dependencia VALUES (2, 1);
 
+SELECT setval(pg_get_serial_sequence('pdca.tarefa', 'id'), (SELECT MAX(id) FROM pdca.tarefa));
+SELECT setval(
+    pg_get_serial_sequence('pdca.causa_raiz', 'id'),
+    (SELECT MAX(id) FROM pdca.causa_raiz)
+);
+SELECT setval(
+    pg_get_serial_sequence('pdca.treinamento', 'id'),
+    (SELECT MAX(id) FROM pdca.treinamento)
+);

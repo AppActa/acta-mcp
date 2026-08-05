@@ -1,5 +1,7 @@
 from collections import Counter, defaultdict
+from datetime import UTC, datetime
 from typing import Any
+from uuid import uuid4
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import NotFoundError
@@ -8,7 +10,13 @@ from acta_mcp.modules.formularios.repository import (
     FormulariosRepository,
     response_form_id,
 )
-from acta_mcp.modules.formularios.schemas import FormulariosQuery, RespostasFormularioQuery
+from acta_mcp.modules.formularios.schemas import (
+    FormularioCreate,
+    FormularioPublish,
+    FormulariosQuery,
+    PerguntaCreate,
+    RespostasFormularioQuery,
+)
 
 _ANSWER_CONTAINERS = ("respostas", "answers", "campos", "fields")
 _QUESTION_FIELDS = ("pergunta", "questao", "question", "campo", "label", "nome")
@@ -278,3 +286,91 @@ class FormulariosService:
             "formularios": forms,
             "respostas": responses,
         }
+
+    def criar_rascunho(
+        self,
+        context: RequestContext,
+        *,
+        id_ciclo: int,
+        titulo: str,
+        tipo: str,
+        descricao: str | None = None,
+    ) -> dict[str, Any]:
+        payload = FormularioCreate(
+            id_ciclo=id_ciclo,
+            titulo=titulo,
+            tipo=tipo,
+            descricao=descricao,
+        )
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        now = datetime.now(UTC)
+        document = {
+            "_id": str(uuid4()),
+            "id_formulario": str(uuid4()),
+            "id_ciclo": payload.id_ciclo,
+            "id_empresa": context.empresa_id,
+            "titulo": payload.titulo.strip(),
+            "tipo": payload.tipo.strip().upper(),
+            "descricao": payload.descricao.strip() if payload.descricao else None,
+            "status": "RASCUNHO",
+            "perguntas": [],
+            "criado_por": context.usuario_id,
+            "criado_em": now,
+            "atualizado_em": now,
+        }
+        return {"status": "ok", "formulario": self.repository.criar(document)}
+
+    def adicionar_pergunta(self, context: RequestContext, **data) -> dict[str, Any]:
+        payload = PerguntaCreate(**data)
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        is_selection = payload.tipo_resposta in {"SELECAO_UNICA", "MULTIPLA"}
+        if is_selection and not payload.opcoes:
+            raise ValueError("Perguntas de seleção devem possuir ao menos uma opção.")
+        if not is_selection and payload.opcoes:
+            raise ValueError("Opções são permitidas apenas em perguntas de seleção.")
+        options = [option.strip() for option in payload.opcoes if option.strip()]
+        if len(options) != len(set(option.casefold() for option in options)):
+            raise ValueError("As opções da pergunta não podem se repetir.")
+        question = {
+            "id_pergunta": str(uuid4()),
+            "texto": payload.texto.strip(),
+            "tipo_resposta": payload.tipo_resposta,
+            "obrigatoria": payload.obrigatoria,
+            "opcoes": options,
+        }
+        form = self.repository.adicionar_pergunta(
+            id_ciclo=payload.id_ciclo,
+            empresa_id=context.empresa_id,
+            id_formulario=payload.id_formulario,
+            pergunta=question,
+            atualizado_em=datetime.now(UTC),
+        )
+        if form is None:
+            raise NotFoundError("Formulário rascunho não encontrado ou já publicado.")
+        return {"status": "ok", "formulario": form, "pergunta": question}
+
+    def publicar(
+        self,
+        context: RequestContext,
+        *,
+        id_ciclo: int,
+        id_formulario: str,
+    ) -> dict[str, Any]:
+        payload = FormularioPublish(id_ciclo=id_ciclo, id_formulario=id_formulario)
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        current = self.repository.obter_formulario(
+            id_ciclo=payload.id_ciclo,
+            empresa_id=context.empresa_id,
+            id_formulario=payload.id_formulario,
+        )
+        if current is None:
+            raise NotFoundError("Formulário não encontrado.")
+        if not current.get("perguntas") and not current.get("campos"):
+            raise ValueError("Adicione ao menos uma pergunta antes de publicar o formulário.")
+        form = self.repository.publicar(
+            id_ciclo=payload.id_ciclo,
+            empresa_id=context.empresa_id,
+            id_formulario=payload.id_formulario,
+            atualizado_em=datetime.now(UTC),
+        )
+        return {"status": "ok", "formulario": form}

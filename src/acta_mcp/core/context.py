@@ -40,8 +40,20 @@ def build_context(
     trace_id: str | None = None,
 ) -> RequestContext:
     parsed_permissions = frozenset(
-        permission.strip() for permission in (permissoes or "read").split(",") if permission.strip()
+        permission.strip().lower()
+        for permission in (permissoes or "read").split(",")
+        if permission.strip()
     )
+    unknown_permissions = parsed_permissions - {
+        "read",
+        "create",
+        "geral",
+        "admin",
+        "write",
+    }
+    if unknown_permissions:
+        values = ", ".join(sorted(unknown_permissions))
+        raise ValueError(f"Nível de acesso inválido: {values}.")
     return RequestContext(
         usuario_id=usuario_id,
         empresa_id=empresa_id,

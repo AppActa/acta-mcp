@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
@@ -34,7 +35,6 @@ def test_all_task_operations(container, context) -> None:
         lambda: service.detalhes(context, 1),
         lambda: service.por_responsavel(context, 1),
         lambda: service.alertas(context, 1),
-        lambda: service.justificativas(context, id_ciclo=1, id_tarefa=1),
         lambda: service.relatorio(context, 1),
     ]
     for operation in operations:
@@ -49,9 +49,6 @@ def test_all_collaborator_operations(container, context) -> None:
         lambda: service.participantes(context, 1),
         lambda: service.por_area(context),
         lambda: service.carga_trabalho(context, 1),
-        lambda: service.competencias(context, id_ciclo=1),
-        lambda: service.disponibilidade(context, id_ciclo=1),
-        lambda: service.realocacoes(context, id_ciclo=1),
         lambda: service.sugestao_realocacao(context, id_ciclo=1),
         lambda: service.relatorio(context, 1),
     ]
@@ -75,7 +72,12 @@ def test_all_form_operations(container, context) -> None:
         assert_ok(operation())
 
     summary = service.resumo_respostas(context, id_ciclo=1)
-    assert summary["total_formularios"] == 1
+    assert summary["total_formularios"] >= 1
+    listed_forms = service.listar(context, id_ciclo=1)
+    assert any(
+        formulario["id_formulario"] == "fenomeno-1"
+        for formulario in listed_forms["formularios"]
+    )
     assert summary["total_respostas"] == 3
     assert any(
         pattern["campo"] == "Sintoma"
@@ -85,29 +87,12 @@ def test_all_form_operations(container, context) -> None:
     )
 
 
-def test_all_report_read_operations(container, context) -> None:
+def test_report_context_operation(container, context) -> None:
     service = container.relatorios
-    service.ensure_indexes()
-    operations = [
-        lambda: service.listar(context, id_ciclo=1),
-        lambda: service.detalhes(
-            context,
-            id_ciclo=1,
-            id_relatorio="relatorio-executivo-1-v2",
-        ),
-        lambda: service.mais_recente(context, id_ciclo=1),
-        lambda: service.contexto_ciclo(context, id_ciclo=1),
-    ]
-    for operation in operations:
-        assert_ok(operation())
-
-    listed = service.listar(context, id_ciclo=1)
-    assert listed["count"] == 2
-    assert all("conteudo" not in report for report in listed["relatorios"])
-    latest = service.mais_recente(context, id_ciclo=1)
-    assert latest["relatorio"]["id_relatorio"] == "relatorio-executivo-1-v2"
     context_result = service.contexto_ciclo(context, id_ciclo=1)
+    assert_ok(context_result)
     assert context_result["somente_leitura"] is True
+    assert "relatorios_existentes" not in context_result
     assert "cpf" not in str(context_result).lower()
 
 
@@ -249,5 +234,90 @@ def test_tenant_isolation(container, context) -> None:
     assert {row["id_empresa"] for row in forms["formularios"]} == {1}
     responses = container.formularios.respostas(context, id_ciclo=1)
     assert {row["id_empresa"] for row in responses["respostas"]} == {1}
-    reports = container.relatorios.listar(context, id_ciclo=1)
-    assert {row["id_empresa"] for row in reports["relatorios"]} == {1}
+
+
+def test_all_creation_operations(container, context) -> None:
+    from acta_mcp.core.context import RequestContext
+
+    admin = RequestContext(
+        usuario_id=1,
+        empresa_id=1,
+        permissoes=frozenset({"admin"}),
+        trace_id="creation-integration",
+    )
+    task = container.tarefas.criar(
+        admin,
+        id_ciclo=1,
+        id_plano_acao=1,
+        id_responsavel=2,
+        titulo=f"Tarefa de integração {uuid4()}",
+        descricao="Validar operações de criação",
+        prioridade="MEDIA",
+        data_fim_prevista=date.today() + timedelta(days=30),
+    )["tarefa"]
+    assert_ok(container.tarefas.atualizar(admin, id_tarefa=task["id"], prioridade="ALTA"))
+    assert_ok(
+        container.tarefas.atualizar_status(
+            admin,
+            id_tarefa=task["id"],
+            status="EM_ANDAMENTO",
+        )
+    )
+    form = container.formularios.criar_rascunho(
+        admin,
+        id_ciclo=1,
+        titulo="Formulário de integração",
+        tipo="TESTE",
+    )["formulario"]
+    assert_ok(
+        container.formularios.adicionar_pergunta(
+            admin,
+            id_ciclo=1,
+            id_formulario=form["id_formulario"],
+            texto="O processo foi validado?",
+            tipo_resposta="BOOLEANO",
+        )
+    )
+    assert_ok(
+        container.formularios.publicar(
+            admin,
+            id_ciclo=1,
+            id_formulario=form["id_formulario"],
+        )
+    )
+
+    assert_ok(
+        container.ciclos.registrar_causa(
+            admin,
+            id_ciclo=1,
+            id_problema=1,
+            descricao="Falta de revisão sistemática",
+        )
+    )
+    assert_ok(
+        container.ciclos.adicionar_item_ishikawa(
+            admin,
+            id_ciclo=1,
+            categoria="metodo",
+            causa="Revisão sem periodicidade definida",
+        )
+    )
+
+    assert_ok(
+        container.licoes_aprendidas.registrar(
+            admin,
+            id_ciclo=1,
+            titulo="Lição de integração",
+            licao="Mutações precisam de autorização centralizada.",
+        )
+    )
+    assert_ok(
+        container.treinamentos.criar(
+            admin,
+            id_ciclo=1,
+            id_responsavel=1,
+            titulo="Treinamento de integração",
+            data_treinamento=date.today() + timedelta(days=15),
+            participantes=[2],
+        )
+    )

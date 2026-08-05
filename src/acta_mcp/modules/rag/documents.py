@@ -972,22 +972,23 @@ ACTA_DOCS = [
         ],
     },
     # =========================================================
-    # COLABORADORES E COMPETÊNCIAS
+    # COLABORADORES E CARGA DE TRABALHO
     # =========================================================
     {
-        "id": "colaboradores_competencias",
-        "title": "Competências dos Colaboradores",
+        "id": "colaboradores_perfil_profissional",
+        "title": "Perfil Profissional dos Colaboradores",
         "section": "Gestão",
         "phase": None,
         "audience": ["gestor"],
-        "tags": ["colaboradores", "competências", "habilidades", "realocação"],
+        "tags": ["colaboradores", "cargo", "área", "realocação"],
         "related_agents": ["colaboradores", "tarefas"],
         "content": (
-            "O ACTA pode registrar competências dos colaboradores, como habilidades técnicas, experiência por setor, participação em ciclos anteriores "
-            "e capacidade de executar determinados tipos de tarefa. Essas informações ajudam o gestor a atribuir ou reatribuir tarefas com mais precisão."
+            "O ACTA consulta cargo, área, participação em ciclos e carga de tarefas dos colaboradores. "
+            "Essas informações ajudam o gestor a avaliar atribuições e possíveis realocações, "
+            "mas não substituem a validação de competências e disponibilidade com a equipe."
         ),
         "example_questions": [
-            "Como consultar competências dos colaboradores?",
+            "Como consultar o perfil profissional dos colaboradores?",
             "Quem é mais indicado para uma tarefa?",
             "O sistema ajuda na realocação?",
         ],
@@ -1001,12 +1002,12 @@ ACTA_DOCS = [
         "tags": ["carga de trabalho", "tarefas", "colaboradores", "disponibilidade"],
         "related_agents": ["colaboradores", "tarefas"],
         "content": (
-            "Além das competências, o gestor deve considerar a carga de trabalho dos colaboradores ao atribuir novas tarefas. "
-            "Um colaborador tecnicamente adequado pode não ser a melhor opção se já possuir muitas tarefas em andamento ou tarefas críticas em atraso."
+            "O gestor deve considerar a carga de trabalho dos colaboradores ao atribuir novas tarefas. "
+            "Cargo e área compatíveis não bastam quando a pessoa já possui muitas tarefas em andamento ou tarefas críticas em atraso."
         ),
         "example_questions": [
             "Quem está com mais tarefas?",
-            "Quem tem disponibilidade?",
+            "Quem aparenta ter menor carga de tarefas?",
             "Como escolher responsável por uma ação?",
         ],
     },

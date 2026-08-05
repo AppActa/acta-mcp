@@ -89,55 +89,14 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
             operation=lambda: service.carga_trabalho(context, id_ciclo, limit),
         )
 
-    def register_mongo_tool(name: str, description: str, method) -> None:
-        def handler(
-            id_ciclo: int,
-            id_colaborador: int | None = None,
-            id_usuario: int | None = None,
-            limit: int = 50,
-        ) -> dict[str, Any]:
-            context = get_request_context()
-            return execute_tool(
-                name=name,
-                audit=audit,
-                operation=lambda: method(
-                    context,
-                    id_ciclo=id_ciclo,
-                    id_colaborador=id_colaborador,
-                    id_usuario=id_usuario,
-                    limit=limit,
-                ),
-            )
-
-        handler.__name__ = name
-        handler.__doc__ = description
-        mcp.tool(name=name, structured_output=True)(handler)
-
-    register_mongo_tool(
-        "colaboradores_competencias",
-        "Consulta competências dos colaboradores registradas no MongoDB.",
-        service.competencias,
-    )
-    register_mongo_tool(
-        "colaboradores_disponibilidade",
-        "Consulta disponibilidade dos colaboradores registrada no MongoDB.",
-        service.disponibilidade,
-    )
-    register_mongo_tool(
-        "colaboradores_realocacoes",
-        "Consulta realocações de colaboradores registradas no MongoDB.",
-        service.realocacoes,
-    )
-
     @mcp.tool(name="colaboradores_sugestao_realocacao", structured_output=True)
     def colaboradores_sugestao_realocacao(
         id_ciclo: int,
         area: str | None = None,
         cargo: str | None = None,
-        competencia: str | None = None,
         limit: int = 20,
     ) -> dict[str, Any]:
-        """Sugere candidatos por carga, competências e disponibilidade."""
+        """Sugere candidatos por menor carga e compatibilidade de área/cargo."""
         context = get_request_context()
         return execute_tool(
             name="colaboradores_sugestao_realocacao",
@@ -147,7 +106,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
                 id_ciclo=id_ciclo,
                 area=area,
                 cargo=cargo,
-                competencia=competencia,
                 limit=limit,
             ),
         )
@@ -157,7 +115,7 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         id_ciclo: int,
         limit: int = 50,
     ) -> dict[str, Any]:
-        """Consolida equipe, carga, competências, disponibilidade e realocações."""
+        """Consolida participantes, carga e candidatos para realocação."""
         context = get_request_context()
         return execute_tool(
             name="colaboradores_relatorio_completo",

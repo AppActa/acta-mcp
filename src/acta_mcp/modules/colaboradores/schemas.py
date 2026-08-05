@@ -14,16 +14,8 @@ class ColaboradoresQuery(BaseModel):
     limit: int = Field(default=50, ge=1, le=200)
 
 
-class ColaboradoresMongo(BaseModel):
-    id_ciclo: int = Field(gt=0)
-    id_colaborador: int | None = Field(default=None, gt=0)
-    id_usuario: int | None = Field(default=None, gt=0)
-    limit: int = Field(default=50, ge=1, le=200)
-
-
 class RealocacaoSugestao(BaseModel):
     id_ciclo: int = Field(gt=0)
     area: str | None = None
     cargo: str | None = None
-    competencia: str | None = None
     limit: int = Field(default=20, ge=1, le=100)

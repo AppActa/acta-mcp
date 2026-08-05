@@ -3,14 +3,8 @@ from typing import Any
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import NotFoundError
-from acta_mcp.modules.common import AccessService, normalize_optional_text
-from acta_mcp.modules.relatorios.repository import RelatoriosRepository
-from acta_mcp.modules.relatorios.schemas import (
-    ContextoRelatorio,
-    RelatorioId,
-    RelatorioMaisRecente,
-    RelatoriosQuery,
-)
+from acta_mcp.modules.common import AccessService
+from acta_mcp.modules.relatorios.schemas import ContextoRelatorio
 
 _SENSITIVE_FIELDS = {
     "cnpj",
@@ -23,10 +17,6 @@ _SENSITIVE_FIELDS = {
     "email_usuario",
     "email_usuario_destino",
 }
-
-
-def _normalize_filter(value: str | None) -> str | None:
-    return normalize_optional_text(value, uppercase=True)
 
 
 def _omit_sensitive(value: Any) -> Any:
@@ -51,105 +41,17 @@ def _optional_source(operation: Callable[[], dict[str, Any]]) -> dict[str, Any]:
 class RelatoriosService:
     def __init__(
         self,
-        repository: RelatoriosRepository,
         access: AccessService,
         ciclos: Any,
         tarefas: Any,
         colaboradores: Any,
         formularios: Any,
     ) -> None:
-        self.repository = repository
         self.access = access
         self.ciclos = ciclos
         self.tarefas = tarefas
         self.colaboradores = colaboradores
         self.formularios = formularios
-
-    def ensure_indexes(self) -> None:
-        self.repository.ensure_indexes()
-
-    def listar(
-        self,
-        context: RequestContext,
-        *,
-        id_ciclo: int,
-        tipo: str | None = None,
-        formato: str | None = None,
-        status: str | None = None,
-        limit: int = 50,
-    ) -> dict[str, Any]:
-        self.access.ensure_cycle(context, id_ciclo)
-        query = RelatoriosQuery(
-            id_ciclo=id_ciclo,
-            tipo=_normalize_filter(tipo),
-            formato=_normalize_filter(formato),
-            status=_normalize_filter(status),
-            limit=limit,
-        )
-        reports = self.repository.listar(
-            id_ciclo=query.id_ciclo,
-            empresa_id=context.empresa_id,
-            tipo=query.tipo,
-            formato=query.formato,
-            status=query.status,
-            limit=query.limit,
-        )
-        return {
-            "status": "ok",
-            "collection": "relatorios",
-            "id_ciclo": id_ciclo,
-            "count": len(reports),
-            "relatorios": _omit_sensitive(reports),
-        }
-
-    def detalhes(
-        self,
-        context: RequestContext,
-        *,
-        id_ciclo: int,
-        id_relatorio: str,
-    ) -> dict[str, Any]:
-        self.access.ensure_cycle(context, id_ciclo)
-        payload = RelatorioId(id_ciclo=id_ciclo, id_relatorio=id_relatorio)
-        report = self.repository.obter(
-            id_ciclo=payload.id_ciclo,
-            empresa_id=context.empresa_id,
-            id_relatorio=payload.id_relatorio,
-        )
-        if report is None:
-            raise NotFoundError(f"Nenhum relatório autorizado encontrado com id {id_relatorio}.")
-        return {"status": "ok", "relatorio": _omit_sensitive(report)}
-
-    def mais_recente(
-        self,
-        context: RequestContext,
-        *,
-        id_ciclo: int,
-        tipo: str | None = None,
-    ) -> dict[str, Any]:
-        self.access.ensure_cycle(context, id_ciclo)
-        payload = RelatorioMaisRecente(
-            id_ciclo=id_ciclo,
-            tipo=_normalize_filter(tipo),
-        )
-        report = self.repository.mais_recente(
-            id_ciclo=payload.id_ciclo,
-            empresa_id=context.empresa_id,
-            tipo=payload.tipo,
-        )
-        if report is None:
-            return {
-                "status": "ok",
-                "id_ciclo": id_ciclo,
-                "encontrado": False,
-                "relatorio": None,
-            }
-        return {
-            "status": "ok",
-            "id_ciclo": id_ciclo,
-            "encontrado": True,
-            "relatorio": _omit_sensitive(report),
-        }
 
     def contexto_ciclo(
         self,
@@ -190,14 +92,6 @@ class RelatoriosService:
             for key, value in form_summary.items()
             if key not in {"formularios", "respostas"}
         }
-        stored = self.repository.listar(
-            id_ciclo=payload.id_ciclo,
-            empresa_id=context.empresa_id,
-            tipo=None,
-            formato=None,
-            status=None,
-            limit=10,
-        )
         return _omit_sensitive(
             {
                 "status": "ok",
@@ -207,6 +101,5 @@ class RelatoriosService:
                 "tarefas": task_data,
                 "equipe": team_data,
                 "formularios": compact_form_summary,
-                "relatorios_existentes": stored,
             }
         )

@@ -1,7 +1,7 @@
 from typing import Any
 
 from acta_mcp.core.context import RequestContext
-from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
+from acta_mcp.core.exceptions import NotFoundError
 from acta_mcp.modules.skills.compiler import normalize_skill_command, parse_skill_markdown
 from acta_mcp.modules.skills.repository import SkillsRepository
 
@@ -12,11 +12,6 @@ class SkillsService:
 
     def ensure_indexes(self) -> None:
         self.repository.ensure_indexes()
-
-    @staticmethod
-    def _require_write(context: RequestContext) -> None:
-        if "write" not in context.permissoes:
-            raise AuthorizationError("Permissão de escrita obrigatória para alterar skills.")
 
     @staticmethod
     def _safe_output(document: dict[str, Any]) -> dict[str, Any]:
@@ -33,7 +28,6 @@ class SkillsService:
         }
 
     def criar(self, context: RequestContext, *, conteudo_markdown: str) -> dict[str, Any]:
-        self._require_write(context)
         definition = parse_skill_markdown(conteudo_markdown)
         stored = self.repository.upsert(context, definition)
         return {"status": "ok", "skill": self._safe_output(stored)}
@@ -65,9 +59,7 @@ class SkillsService:
         return {"status": "ok", "count": len(skills), "skills": skills}
 
     def excluir(self, context: RequestContext, *, nome: str) -> dict[str, Any]:
-        self._require_write(context)
         slug = normalize_skill_command(nome)
         if not self.repository.delete(context, slug):
             raise NotFoundError(f"A skill /{slug} não foi encontrada.")
         return {"status": "ok", "comando": f"/{slug}", "excluida": True}
-

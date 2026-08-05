@@ -1,6 +1,7 @@
 from typing import Any
 
 from bson import ObjectId
+from pymongo import ReturnDocument
 
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
 from acta_mcp.infrastructure.serializers import serialize
@@ -142,3 +143,57 @@ class FormulariosRepository:
             .limit(limit)
         )
         return serialize(documents)
+
+    def criar(self, document: dict[str, Any]) -> dict[str, Any]:
+        self.database["formularios"].insert_one(document)
+        return serialize(document)
+
+    def adicionar_pergunta(
+        self,
+        *,
+        id_ciclo: int,
+        empresa_id: int,
+        id_formulario: str,
+        pergunta: dict[str, Any],
+        atualizado_em: Any,
+    ) -> dict[str, Any] | None:
+        document = self.database["formularios"].find_one_and_update(
+            {
+                "$and": [
+                    _alias_filter("ciclo", id_ciclo),
+                    _alias_filter("empresa", empresa_id),
+                    _form_filter(id_formulario),
+                    {"status": "RASCUNHO"},
+                ]
+            },
+            {"$push": {"perguntas": pergunta}, "$set": {"atualizado_em": atualizado_em}},
+            return_document=ReturnDocument.AFTER,
+        )
+        return serialize(document) if document is not None else None
+
+    def publicar(
+        self,
+        *,
+        id_ciclo: int,
+        empresa_id: int,
+        id_formulario: str,
+        atualizado_em: Any,
+    ) -> dict[str, Any] | None:
+        document = self.database["formularios"].find_one_and_update(
+            {
+                "$and": [
+                    _alias_filter("ciclo", id_ciclo),
+                    _alias_filter("empresa", empresa_id),
+                    _form_filter(id_formulario),
+                ]
+            },
+            {
+                "$set": {
+                    "status": "ATIVO",
+                    "publicado_em": atualizado_em,
+                    "atualizado_em": atualizado_em,
+                }
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+        return serialize(document) if document is not None else None

@@ -304,3 +304,35 @@ class CiclosRepository:
             """,
             (id_ciclo, empresa_id),
         )
+
+    def registrar_causa(
+        self,
+        *,
+        id_ciclo: int,
+        id_problema: int,
+        id_plano_acao: int | None,
+        descricao: str,
+        aceita: bool,
+        principal: bool,
+        usuario_id: int,
+    ) -> dict | None:
+        return self.postgres.fetch_one(
+            """
+            INSERT INTO pdca.causa_raiz (
+                id_ciclo, id_problema, id_plano_acao, descricao, origem,
+                aceita, principal, validada_por, validada_em
+            )
+            VALUES (%s, %s, %s, %s, 'IA', %s, %s, %s, CASE WHEN %s THEN NOW() ELSE NULL END)
+            RETURNING *;
+            """,
+            (
+                id_ciclo,
+                id_problema,
+                id_plano_acao,
+                descricao,
+                aceita,
+                principal,
+                usuario_id if aceita else None,
+                aceita,
+            ),
+        )

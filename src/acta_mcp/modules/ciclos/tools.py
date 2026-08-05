@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 
@@ -70,3 +70,51 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         "Consolida a visão completa do ciclo em resultado estruturado.",
         service.relatorio,
     )
+
+    @mcp.tool(name="ciclos_registrar_causa", structured_output=True)
+    def ciclos_registrar_causa(
+        id_ciclo: int,
+        id_problema: int,
+        descricao: str,
+        id_plano_acao: int | None = None,
+        aceita: bool = False,
+        principal: bool = False,
+    ) -> dict[str, Any]:
+        """Registra uma causa-raiz estruturada em um ciclo autorizado."""
+        context = get_request_context()
+        return execute_tool(
+            name="ciclos_registrar_causa",
+            audit=audit,
+            minimum_access="create",
+            operation=lambda: service.registrar_causa(
+                context,
+                id_ciclo=id_ciclo,
+                id_problema=id_problema,
+                descricao=descricao,
+                id_plano_acao=id_plano_acao,
+                aceita=aceita,
+                principal=principal,
+            ),
+        )
+
+    @mcp.tool(name="ciclos_adicionar_item_ishikawa", structured_output=True)
+    def ciclos_adicionar_item_ishikawa(
+        id_ciclo: int,
+        categoria: Literal[
+            "metodo", "mao_de_obra", "maquina", "material", "medicao", "meio_ambiente"
+        ],
+        causa: str,
+    ) -> dict[str, Any]:
+        """Adiciona uma causa a uma categoria permitida do Ishikawa."""
+        context = get_request_context()
+        return execute_tool(
+            name="ciclos_adicionar_item_ishikawa",
+            audit=audit,
+            minimum_access="create",
+            operation=lambda: service.adicionar_item_ishikawa(
+                context,
+                id_ciclo=id_ciclo,
+                categoria=categoria,
+                causa=causa,
+            ),
+        )

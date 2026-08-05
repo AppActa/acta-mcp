@@ -22,18 +22,21 @@ from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
 from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
+from acta_mcp.modules.licoes_aprendidas.repository import LicoesAprendidasRepository
+from acta_mcp.modules.licoes_aprendidas.service import LicoesAprendidasService
 from acta_mcp.modules.memoria.repository import MemoryRepository
 from acta_mcp.modules.memoria.service import MemoryService
 from acta_mcp.modules.predicoes.repository import PredicoesRepository
 from acta_mcp.modules.predicoes.service import PredicoesService
 from acta_mcp.modules.rag.repository import FaqRepository
 from acta_mcp.modules.rag.service import RagService
-from acta_mcp.modules.relatorios.repository import RelatoriosRepository
 from acta_mcp.modules.relatorios.service import RelatoriosService
 from acta_mcp.modules.skills.repository import SkillsRepository
 from acta_mcp.modules.skills.service import SkillsService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
 from acta_mcp.modules.tarefas.service import TarefasService
+from acta_mcp.modules.treinamentos.repository import TreinamentosRepository
+from acta_mcp.modules.treinamentos.service import TreinamentosService
 from acta_mcp.registry import register_all
 
 
@@ -55,10 +58,9 @@ def create_container(settings: Settings) -> Container:
         audit=AuditLogger(),
     )
     container.ciclos = CiclosService(CiclosRepository(postgres), mongo, access)
-    container.tarefas = TarefasService(TarefasRepository(postgres), mongo, access)
+    container.tarefas = TarefasService(TarefasRepository(postgres), access)
     container.colaboradores = ColaboradoresService(
         ColaboradoresRepository(postgres),
-        mongo,
         access,
     )
     container.formularios = FormulariosService(FormulariosRepository(mongo), access)
@@ -76,7 +78,6 @@ def create_container(settings: Settings) -> Container:
         summary_every_messages=settings.acta_memory_summary_every_messages,
     )
     container.relatorios = RelatoriosService(
-        RelatoriosRepository(mongo),
         access,
         container.ciclos,
         container.tarefas,
@@ -93,6 +94,10 @@ def create_container(settings: Settings) -> Container:
         )
     )
     container.skills = SkillsService(SkillsRepository(mongo.database))
+    container.licoes_aprendidas = LicoesAprendidasService(
+        LicoesAprendidasRepository(mongo), access
+    )
+    container.treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
     return container
 
 
@@ -153,10 +158,10 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.postgres_pool.open(wait=True)
         container.postgres.ping()
         container.mongo.ping()
-        container.relatorios.ensure_indexes()
         container.memoria.ensure_indexes()
         container.rag.ensure_index()
         container.skills.ensure_indexes()
+        container.licoes_aprendidas.ensure_indexes()
         try:
             async with mcp_lifespan(starlette_app):
                 yield

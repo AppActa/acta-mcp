@@ -1,26 +1,24 @@
 from datetime import date
 
 from acta_mcp.core.context import RequestContext
-from acta_mcp.core.exceptions import NotFoundError
-from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
-from acta_mcp.modules.common import (
-    TAREFA_ID_FIELDS,
-    AccessService,
-    filter_documents_by_ids,
-)
+from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
+from acta_mcp.modules.common import AccessService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
-from acta_mcp.modules.tarefas.schemas import TarefasQuery
+from acta_mcp.modules.tarefas.schemas import (
+    TarefaCreate,
+    TarefasQuery,
+    TarefaStatusUpdate,
+    TarefaUpdate,
+)
 
 
 class TarefasService:
     def __init__(
         self,
         repository: TarefasRepository,
-        mongo: MongoRepository,
         access: AccessService,
     ) -> None:
         self.repository = repository
-        self.mongo = mongo
         self.access = access
 
     def consultar(
@@ -130,33 +128,6 @@ class TarefasService:
             "alertas": rows,
         }
 
-    def justificativas(
-        self,
-        context: RequestContext,
-        *,
-        id_ciclo: int,
-        id_tarefa: int | None = None,
-        limit: int = 20,
-    ) -> dict:
-        self.access.ensure_cycle(context, id_ciclo)
-        if id_tarefa is not None:
-            self.access.ensure_task(context, id_tarefa)
-        documents = self.mongo.find_by_ciclo(
-            collection="justificativas_tarefas",
-            id_ciclo=id_ciclo,
-            empresa_id=context.empresa_id,
-            limit=limit,
-        )
-        documents = filter_documents_by_ids(documents, (id_tarefa, TAREFA_ID_FIELDS))
-        return {
-            "status": "ok",
-            "collection": "justificativas_tarefas",
-            "id_ciclo": id_ciclo,
-            "id_tarefa": id_tarefa,
-            "count": len(documents),
-            "justificativas": documents,
-        }
-
     def relatorio(self, context: RequestContext, id_ciclo: int, limit: int = 50) -> dict:
         return {
             "status": "ok",
@@ -170,9 +141,34 @@ class TarefasService:
             ),
             "tarefas_por_responsavel": self.por_responsavel(context, id_ciclo),
             "alertas_prazo": self.alertas(context, id_ciclo),
-            "justificativas": self.justificativas(
-                context,
-                id_ciclo=id_ciclo,
-                limit=min(limit, 20),
-            ),
         }
+
+    def criar(self, context: RequestContext, **data) -> dict:
+        payload = TarefaCreate(**data)
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        plan = self.access.ensure_plan(context, payload.id_plano_acao)
+        if plan["id_ciclo"] != payload.id_ciclo:
+            raise AuthorizationError("O plano de ação não pertence ao ciclo informado.")
+        self.access.ensure_user(context, payload.id_responsavel)
+        tarefa = self.repository.criar(payload)
+        if tarefa is None:
+            raise RuntimeError("A tarefa não foi criada.")
+        return {"status": "ok", "tarefa": tarefa}
+
+    def atualizar(self, context: RequestContext, **data) -> dict:
+        payload = TarefaUpdate(**data)
+        self.access.ensure_task(context, payload.id_tarefa)
+        if payload.id_responsavel is not None:
+            self.access.ensure_user(context, payload.id_responsavel)
+        tarefa = self.repository.atualizar(payload)
+        if tarefa is None:
+            raise NotFoundError(f"Nenhuma tarefa encontrada com id {payload.id_tarefa}.")
+        return {"status": "ok", "tarefa": tarefa}
+
+    def atualizar_status(self, context: RequestContext, *, id_tarefa: int, status: str) -> dict:
+        payload = TarefaStatusUpdate(id_tarefa=id_tarefa, status=status)
+        self.access.ensure_task(context, payload.id_tarefa)
+        tarefa = self.repository.atualizar_status(payload.id_tarefa, payload.status)
+        if tarefa is None:
+            raise NotFoundError(f"Nenhuma tarefa encontrada com id {payload.id_tarefa}.")
+        return {"status": "ok", "tarefa": tarefa}

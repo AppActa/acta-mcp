@@ -96,3 +96,56 @@ class AccessService:
             raise NotFoundError(f"Nenhum colaborador encontrado com id {id_colaborador}.")
         if row["id_empresa"] != context.empresa_id:
             raise AuthorizationError("O usuário não possui acesso a este colaborador.")
+
+    def ensure_user(self, context: RequestContext, usuario_id: int) -> dict[str, Any]:
+        row = self.postgres.fetch_one(
+            "SELECT id, id_empresa, status FROM usuario_sistema WHERE id = %s;",
+            (usuario_id,),
+        )
+        if row is None:
+            raise NotFoundError(f"Nenhum usuário encontrado com id {usuario_id}.")
+        if row["id_empresa"] != context.empresa_id:
+            raise AuthorizationError("O usuário informado não pertence à empresa autenticada.")
+        if row.get("status") != "ATIVO":
+            raise AuthorizationError("O usuário informado não está ativo.")
+        return row
+
+    def ensure_plan(self, context: RequestContext, id_plano_acao: int) -> dict[str, Any]:
+        row = self.postgres.fetch_one(
+            """
+            SELECT pa.id, pa.id_ciclo, c.id_empresa
+            FROM pdca.plano_acao pa
+            JOIN pdca.ciclo c ON c.id = pa.id_ciclo
+            WHERE pa.id = %s;
+            """,
+            (id_plano_acao,),
+        )
+        if row is None:
+            raise NotFoundError(f"Nenhum plano de ação encontrado com id {id_plano_acao}.")
+        if row["id_empresa"] != context.empresa_id:
+            raise AuthorizationError("O plano de ação não pertence à empresa autenticada.")
+        return row
+
+    def ensure_problem(
+        self,
+        context: RequestContext,
+        id_problema: int,
+        *,
+        id_ciclo: int | None = None,
+    ) -> dict[str, Any]:
+        row = self.postgres.fetch_one(
+            """
+            SELECT p.id, p.id_ciclo, c.id_empresa
+            FROM pdca.problema p
+            JOIN pdca.ciclo c ON c.id = p.id_ciclo
+            WHERE p.id = %s;
+            """,
+            (id_problema,),
+        )
+        if row is None:
+            raise NotFoundError(f"Nenhum problema encontrado com id {id_problema}.")
+        if row["id_empresa"] != context.empresa_id:
+            raise AuthorizationError("O problema não pertence à empresa autenticada.")
+        if id_ciclo is not None and row["id_ciclo"] != id_ciclo:
+            raise AuthorizationError("O problema não pertence ao ciclo informado.")
+        return row

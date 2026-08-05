@@ -2,15 +2,17 @@
 
 ## Ciclos
 
-`ciclo_visao_geral`, `ciclo_problema_principal`, `ciclo_causas_raiz`, `ciclo_ishikawa`, `ciclo_riscos_pendencias`, `ciclo_treinamentos`, `ciclo_participantes`, `ciclo_relatorio_completo`.
+`ciclo_visao_geral`, `ciclo_problema_principal`, `ciclo_causas_raiz`, `ciclo_ishikawa`, `ciclo_riscos_pendencias`, `ciclo_treinamentos`, `ciclo_participantes`, `ciclo_relatorio_completo`, `ciclos_registrar_causa` e `ciclos_adicionar_item_ishikawa`.
 
 ## Tarefas
 
-`tarefas_consultar`, `tarefas_atrasadas`, `tarefas_concluidas`, `tarefas_detalhes`, `tarefas_por_responsavel`, `tarefas_alertas_prazo`, `tarefas_justificativas`, `tarefas_relatorio_completo`.
+`tarefas_consultar`, `tarefas_atrasadas`, `tarefas_concluidas`, `tarefas_detalhes`, `tarefas_por_responsavel`, `tarefas_alertas_prazo`, `tarefas_relatorio_completo`, `tarefas_criar`, `tarefas_atualizar` e `tarefas_atualizar_status`.
+
+As operações de escrita exigem `create`.
 
 ## Colaboradores
 
-`colaboradores_consultar`, `colaborador_detalhes`, `colaboradores_participantes_ciclo`, `colaboradores_por_area`, `colaboradores_carga_trabalho`, `colaboradores_competencias`, `colaboradores_disponibilidade`, `colaboradores_realocacoes`, `colaboradores_sugestao_realocacao`, `colaboradores_relatorio_completo`.
+`colaboradores_consultar`, `colaborador_detalhes`, `colaboradores_participantes_ciclo`, `colaboradores_por_area`, `colaboradores_carga_trabalho`, `colaboradores_sugestao_realocacao` e `colaboradores_relatorio_completo`.
 
 Dados pessoais como CPF, nascimento, telefone pessoal e e-mail adicional foram omitidos dos resultados. A empresa vem exclusivamente do contexto autenticado.
 
@@ -20,18 +22,20 @@ Dados pessoais como CPF, nascimento, telefone pessoal e e-mail adicional foram o
 
 ## Formulários
 
-`formularios_listar`, `formularios_detalhes`, `formularios_respostas` e
-`formularios_resumo_respostas` leem as collections MongoDB `formularios` e
+`formularios_listar`, `formularios_detalhes`, `formularios_respostas`,
+`formularios_resumo_respostas`, `formularios_criar_rascunho`,
+`formularios_adicionar_pergunta` e `formularios_publicar` usam as collections MongoDB `formularios` e
 `respostas_formulario`. Toda leitura é limitada ao ciclo e à empresa autenticada.
 O resumo calcula campos mais respondidos e valores repetidos, mas não transforma
 correlação ou frequência em causa raiz comprovada.
 
+Todas as tools deste domínio exigem nível `geral`.
+
 ## Relatórios
 
-`relatorios_listar`, `relatorios_detalhes`, `relatorios_mais_recente` e
-`relatorios_contexto_ciclo` são operações somente de leitura. Os três primeiros
-consultam a collection MongoDB `relatorios`; o último consolida evidências atuais
-de ciclos, tarefas, equipe e formulários para o agente produzir o texto.
+`relatorios_contexto_ciclo` consolida os dados atuais de ciclo, tarefas, equipe e
+formulários para o agente gerar o relatório sob demanda. Relatórios não são
+persistidos em uma collection MongoDB. O contexto consolidado exige `geral`.
 
 ## Predições
 
@@ -64,7 +68,8 @@ pelo usuário. Memórias inferidas exigem consentimento no modo `automatica`.
 ## Skills personalizadas
 
 `skills_criar`, `skills_obter`, `skills_listar` e `skills_excluir` gerenciam skills
-isoladas por `usuario_id` e `empresa_id`. Criação e exclusão exigem permissão `write`.
+isoladas por `usuario_id` e `empresa_id`. Todas exigem somente `read`, porque a
+skill pertence exclusivamente ao usuário autenticado.
 
 O conteúdo aceito possui somente três seções: `# nome`, `# objetivo` e `# regras`.
 Quando `# regras` não possui conteúdo, o valor salvo é `Nenhuma regra observada`.
@@ -73,3 +78,18 @@ agentes, especialistas, roteador, orquestrador, ferramentas ou tools. A skill é
 revalidada sempre que for carregada, inclusive contra alterações diretas no MongoDB.
 O índice único e todas as operações usam `empresa_id + usuario_id + slug`; skills não
 são compartilhadas entre usuários, mesmo quando possuem o mesmo nome.
+
+## Lições aprendidas e treinamentos
+
+`licoes_aprendidas_registrar` persiste uma lição autorizada no MongoDB e exige
+`create`. `treinamentos_criar` cria o treinamento e seus participantes em uma
+transação PostgreSQL e exige `geral`.
+
+## Resumo de autorização das criações
+
+| Tools | Nível mínimo |
+| --- | --- |
+| `skills_*` | `read` |
+| criações de tarefas/ciclos/lições | `create` |
+| `formularios_*`, `treinamentos_criar` e contexto consolidado de relatório | `geral` |
+| visão administrativa futura da empresa | `admin` |

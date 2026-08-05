@@ -1,1 +1,1 @@
-"""Leitura de relatórios persistidos e contexto para geração de relatórios."""
+"""Contexto de dados para geração de relatórios sob demanda."""

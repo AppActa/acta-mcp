@@ -30,6 +30,8 @@ class Container:
     memoria: object | None = None
     rag: object | None = None
     skills: object | None = None
+    licoes_aprendidas: object | None = None
+    treinamentos: object | None = None
 
     def close(self) -> None:
         self.postgres_pool.close()

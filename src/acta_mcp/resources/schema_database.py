@@ -8,12 +8,9 @@ PostgreSQL:
 
 MongoDB (sempre filtrado por id_ciclo e id_empresa):
 - ishikawa
-- justificativas_tarefas
-- competencias_colaborador
-- disponibilidade_colaborador
-- realocacoes_colaborador
 - formularios, respostas_formulario
-- relatorios
+- sessoes, mensagens, memoria_usuario, memoria_consentimentos
+- skills_usuario, licoes_aprendidas
 
 Não existe tool de SQL ou MongoDB livre.
 """.strip()

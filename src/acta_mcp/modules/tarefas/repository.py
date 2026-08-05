@@ -1,5 +1,7 @@
+from typing import Any
+
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
-from acta_mcp.modules.tarefas.schemas import TarefasQuery
+from acta_mcp.modules.tarefas.schemas import TarefaCreate, TarefasQuery, TarefaUpdate
 
 
 class TarefasRepository:
@@ -214,3 +216,51 @@ class TarefasRepository:
             query += " AND a.lido_em IS NULL"
         query += " ORDER BY a.lido_em NULLS FIRST, a.enviado_em DESC;"
         return self.postgres.fetch_all(query, (id_ciclo, empresa_id))
+
+    def criar(self, payload: TarefaCreate) -> dict[str, Any]:
+        return self.postgres.fetch_one(
+            """
+            INSERT INTO pdca.tarefa (
+                id_plano_acao, id_responsavel, titulo, descricao,
+                prioridade, status, data_fim_prevista
+            )
+            VALUES (%s, %s, %s, %s, %s, 'PENDENTE', %s)
+            RETURNING *;
+            """,
+            (
+                payload.id_plano_acao,
+                payload.id_responsavel,
+                payload.titulo,
+                payload.descricao,
+                payload.prioridade,
+                payload.data_fim_prevista,
+            ),
+        )
+
+    def atualizar(self, payload: TarefaUpdate) -> dict[str, Any] | None:
+        values = payload.model_dump(exclude={"id_tarefa"}, exclude_none=True)
+        assignments = [f"{field} = %s" for field in values]
+        assignments.append("atualizado_em = NOW()")
+        return self.postgres.fetch_one(
+            f"UPDATE pdca.tarefa SET {', '.join(assignments)} WHERE id = %s RETURNING *;",
+            (*values.values(), payload.id_tarefa),
+        )
+
+    def atualizar_status(self, id_tarefa: int, status: str) -> dict[str, Any] | None:
+        date_updates = ""
+        if status == "EM_ANDAMENTO":
+            date_updates = ", data_inicio_real = COALESCE(data_inicio_real, CURRENT_DATE)"
+        elif status == "CONCLUIDA":
+            date_updates = (
+                ", data_inicio_real = COALESCE(data_inicio_real, CURRENT_DATE), "
+                "data_fim_real = CURRENT_DATE"
+            )
+        return self.postgres.fetch_one(
+            f"""
+            UPDATE pdca.tarefa
+            SET status = %s, atualizado_em = NOW(){date_updates}
+            WHERE id = %s
+            RETURNING *;
+            """,
+            (status, id_tarefa),
+        )

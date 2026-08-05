@@ -8,6 +8,8 @@ TOOL_CATALOG = {
         "ciclo_treinamentos",
         "ciclo_participantes",
         "ciclo_relatorio_completo",
+        "ciclos_registrar_causa",
+        "ciclos_adicionar_item_ishikawa",
     ],
     "tarefas": [
         "tarefas_consultar",
@@ -16,8 +18,10 @@ TOOL_CATALOG = {
         "tarefas_detalhes",
         "tarefas_por_responsavel",
         "tarefas_alertas_prazo",
-        "tarefas_justificativas",
         "tarefas_relatorio_completo",
+        "tarefas_criar",
+        "tarefas_atualizar",
+        "tarefas_atualizar_status",
     ],
     "colaboradores": [
         "colaboradores_consultar",
@@ -25,9 +29,6 @@ TOOL_CATALOG = {
         "colaboradores_participantes_ciclo",
         "colaboradores_por_area",
         "colaboradores_carga_trabalho",
-        "colaboradores_competencias",
-        "colaboradores_disponibilidade",
-        "colaboradores_realocacoes",
         "colaboradores_sugestao_realocacao",
         "colaboradores_relatorio_completo",
     ],
@@ -36,11 +37,11 @@ TOOL_CATALOG = {
         "formularios_detalhes",
         "formularios_respostas",
         "formularios_resumo_respostas",
+        "formularios_criar_rascunho",
+        "formularios_adicionar_pergunta",
+        "formularios_publicar",
     ],
     "relatorios": [
-        "relatorios_listar",
-        "relatorios_detalhes",
-        "relatorios_mais_recente",
         "relatorios_contexto_ciclo",
     ],
     "predicoes": [
@@ -70,4 +71,6 @@ TOOL_CATALOG = {
     ],
     "rag": ["faq_retriever"],
     "skills": ["skills_criar", "skills_obter", "skills_listar", "skills_excluir"],
+    "licoes_aprendidas": ["licoes_aprendidas_registrar"],
+    "treinamentos": ["treinamentos_criar"],
 }

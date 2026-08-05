@@ -1,7 +1,13 @@
+from datetime import UTC, datetime
+
+from pymongo import ReturnDocument
+
 from acta_mcp.core.context import RequestContext
-from acta_mcp.core.exceptions import NotFoundError
+from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
+from acta_mcp.infrastructure.serializers import serialize
 from acta_mcp.modules.ciclos.repository import CiclosRepository
+from acta_mcp.modules.ciclos.schemas import CausaCreate, IshikawaItemCreate
 from acta_mcp.modules.common import AccessService
 
 
@@ -123,3 +129,54 @@ class CiclosService:
             "treinamentos": self.treinamentos(context, id_ciclo),
             "participantes": self.participantes(context, id_ciclo),
         }
+
+    def registrar_causa(self, context: RequestContext, **data) -> dict:
+        payload = CausaCreate(**data)
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_problem(
+            context,
+            payload.id_problema,
+            id_ciclo=payload.id_ciclo,
+        )
+        if payload.id_plano_acao is not None:
+            plan = self.access.ensure_plan(context, payload.id_plano_acao)
+            if plan["id_ciclo"] != payload.id_ciclo:
+                raise AuthorizationError("O plano de ação não pertence ao ciclo informado.")
+        cause = self.repository.registrar_causa(
+            id_ciclo=payload.id_ciclo,
+            id_problema=payload.id_problema,
+            id_plano_acao=payload.id_plano_acao,
+            descricao=payload.descricao.strip(),
+            aceita=payload.aceita,
+            principal=payload.principal,
+            usuario_id=context.usuario_id,
+        )
+        if cause is None:
+            raise RuntimeError("A causa não foi registrada.")
+        return {"status": "ok", "causa": cause}
+
+    def adicionar_item_ishikawa(self, context: RequestContext, **data) -> dict:
+        payload = IshikawaItemCreate(**data)
+        self.access.ensure_cycle(context, payload.id_ciclo)
+        now = datetime.now(UTC)
+        document = self.mongo.database["ishikawa"].find_one_and_update(
+            {
+                "$and": [
+                    {"id_ciclo": {"$in": [payload.id_ciclo, str(payload.id_ciclo)]}},
+                    {"id_empresa": {"$in": [context.empresa_id, str(context.empresa_id)]}},
+                ]
+            },
+            {
+                "$setOnInsert": {
+                    "id_ciclo": payload.id_ciclo,
+                    "id_empresa": context.empresa_id,
+                    "criado_por": context.usuario_id,
+                    "criado_em": now,
+                },
+                "$addToSet": {f"causas.{payload.categoria}": payload.causa.strip()},
+                "$set": {"atualizado_em": now},
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return {"status": "ok", "ishikawa": serialize(document)}

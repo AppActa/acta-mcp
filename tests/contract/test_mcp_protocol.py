@@ -22,34 +22,51 @@ TOOL_ARGUMENTS = {
     "ciclo_treinamentos": {"id_ciclo": 1},
     "ciclo_participantes": {"id_ciclo": 1},
     "ciclo_relatorio_completo": {"id_ciclo": 1},
+    "ciclos_registrar_causa": {
+        "id_ciclo": 1,
+        "id_problema": 1,
+        "descricao": "Causa registrada pelo teste de contrato",
+    },
+    "ciclos_adicionar_item_ishikawa": {
+        "id_ciclo": 1,
+        "categoria": "metodo",
+        "causa": "Ausência de revisão periódica",
+    },
     "tarefas_consultar": {"id_ciclo": 1},
     "tarefas_atrasadas": {"id_ciclo": 1},
     "tarefas_concluidas": {"id_ciclo": 1},
     "tarefas_detalhes": {"id_tarefa": 1},
     "tarefas_por_responsavel": {"id_ciclo": 1},
     "tarefas_alertas_prazo": {"id_ciclo": 1},
-    "tarefas_justificativas": {"id_ciclo": 1},
     "tarefas_relatorio_completo": {"id_ciclo": 1},
+    "tarefas_criar": {
+        "id_ciclo": 1,
+        "id_plano_acao": 1,
+        "id_responsavel": 2,
+        "titulo": "Tarefa criada pelo contrato",
+        "descricao": "Validar as novas tools de escrita",
+        "data_fim_prevista": "2026-12-31",
+    },
+    "tarefas_atualizar": {},
+    "tarefas_atualizar_status": {},
     "colaboradores_consultar": {},
     "colaborador_detalhes": {"id_colaborador": 2, "id_ciclo": 1},
     "colaboradores_participantes_ciclo": {"id_ciclo": 1},
     "colaboradores_por_area": {},
     "colaboradores_carga_trabalho": {"id_ciclo": 1},
-    "colaboradores_competencias": {"id_ciclo": 1},
-    "colaboradores_disponibilidade": {"id_ciclo": 1},
-    "colaboradores_realocacoes": {"id_ciclo": 1},
     "colaboradores_sugestao_realocacao": {"id_ciclo": 1},
     "colaboradores_relatorio_completo": {"id_ciclo": 1},
     "formularios_listar": {"id_ciclo": 1},
     "formularios_detalhes": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
     "formularios_respostas": {"id_ciclo": 1},
     "formularios_resumo_respostas": {"id_ciclo": 1},
-    "relatorios_listar": {"id_ciclo": 1},
-    "relatorios_detalhes": {
+    "formularios_criar_rascunho": {
         "id_ciclo": 1,
-        "id_relatorio": "relatorio-executivo-1-v2",
+        "titulo": "Formulário do contrato",
+        "tipo": "TESTE",
     },
-    "relatorios_mais_recente": {"id_ciclo": 1},
+    "formularios_adicionar_pergunta": {},
+    "formularios_publicar": {},
     "relatorios_contexto_ciclo": {"id_ciclo": 1},
     "predicoes_risco_atraso_tarefa": {"id_tarefa": 1},
     "predicoes_estimativa_conclusao_tarefa": {"id_tarefa": 1},
@@ -97,6 +114,18 @@ TOOL_ARGUMENTS = {
     "skills_obter": {"nome": "resumo-contratual"},
     "skills_listar": {},
     "skills_excluir": {"nome": "resumo-contratual"},
+    "licoes_aprendidas_registrar": {
+        "id_ciclo": 1,
+        "titulo": "Lição do contrato",
+        "licao": "Validar mutações com isolamento por empresa.",
+    },
+    "treinamentos_criar": {
+        "id_ciclo": 1,
+        "id_responsavel": 1,
+        "titulo": "Treinamento do contrato",
+        "data_treinamento": "2026-12-20",
+        "participantes": [2],
+    },
 }
 
 
@@ -147,7 +176,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 60
+            assert len(expected) == 63
 
             response = await session.call_tool(
                 "tarefas_atrasadas",
@@ -155,7 +184,11 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             )
             assert not response.isError
             assert response.structuredContent["status"] == "ok"
-            assert response.structuredContent["count"] == 1
+            assert response.structuredContent["count"] >= 1
+            assert any(
+                tarefa["id"] == 1
+                for tarefa in response.structuredContent["tarefas"]
+            )
 
 
 @pytest.mark.asyncio
@@ -163,17 +196,36 @@ async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
     headers = {
         "X-Acta-Usuario-Id": "1",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "read,write",
+        "X-Acta-Permissoes": "admin",
     }
     async with streamablehttp_client(mcp_url, headers=headers) as streams:
         read_stream, write_stream, _ = streams
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
+            created_form_id = None
+            created_task_id = None
             for tool_name, arguments in TOOL_ARGUMENTS.items():
+                if tool_name == "tarefas_atualizar":
+                    arguments = {"id_tarefa": created_task_id, "prioridade": "ALTA"}
+                elif tool_name == "tarefas_atualizar_status":
+                    arguments = {"id_tarefa": created_task_id, "status": "EM_ANDAMENTO"}
+                elif tool_name == "formularios_adicionar_pergunta":
+                    arguments = {
+                        "id_ciclo": 1,
+                        "id_formulario": created_form_id,
+                        "texto": "A validação foi concluída?",
+                        "tipo_resposta": "BOOLEANO",
+                    }
+                elif tool_name == "formularios_publicar":
+                    arguments = {"id_ciclo": 1, "id_formulario": created_form_id}
                 response = await session.call_tool(tool_name, arguments)
                 assert not response.isError, tool_name
                 assert response.structuredContent is not None, tool_name
                 assert response.structuredContent["status"] == "ok", tool_name
+                if tool_name == "tarefas_criar":
+                    created_task_id = response.structuredContent["tarefa"]["id"]
+                elif tool_name == "formularios_criar_rascunho":
+                    created_form_id = response.structuredContent["formulario"]["id_formulario"]
 
             listed_memories = await session.call_tool("memoria_listar", {})
             memories = listed_memories.structuredContent["memorias"]
@@ -181,3 +233,81 @@ async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
             deleted = await session.call_tool("memoria_excluir", {"id_memoria": memories[0]["_id"]})
             assert deleted.structuredContent["status"] == "ok"
             assert deleted.structuredContent["excluida"] is True
+
+
+@pytest.mark.asyncio
+async def test_access_levels(mcp_url) -> None:
+    async def call(headers, tool_name, arguments):
+        async with streamablehttp_client(mcp_url, headers=headers) as streams:
+            read_stream, write_stream, _ = streams
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                return await session.call_tool(tool_name, arguments)
+
+    read_headers = {
+        "X-Acta-Usuario-Id": "2",
+        "X-Acta-Empresa-Id": "1",
+        "X-Acta-Permissoes": "read",
+    }
+    forbidden_create = await call(
+        read_headers,
+        "tarefas_criar",
+        {
+            "id_ciclo": 1,
+            "id_plano_acao": 1,
+            "id_responsavel": 2,
+            "titulo": "Não deve criar",
+            "descricao": "Nível read não pode criar tarefas",
+            "data_fim_prevista": "2026-12-31",
+        },
+    )
+    assert forbidden_create.structuredContent["status"] == "forbidden"
+
+    create_headers = {**read_headers, "X-Acta-Permissoes": "create"}
+    forbidden_form = await call(
+        create_headers,
+        "formularios_listar",
+        {"id_ciclo": 1},
+    )
+    assert forbidden_form.structuredContent["status"] == "forbidden"
+
+    for tool_name, arguments in (
+        ("relatorios_contexto_ciclo", {"id_ciclo": 1}),
+        (
+            "predicoes_respostas_atipicas",
+            {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
+        ),
+        (
+            "predicoes_tema_formulario",
+            {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
+        ),
+    ):
+        forbidden_indirect_form_access = await call(
+            create_headers,
+            tool_name,
+            arguments,
+        )
+        assert forbidden_indirect_form_access.structuredContent["status"] == "forbidden"
+
+    geral_headers = {**read_headers, "X-Acta-Permissoes": "geral"}
+    allowed_form = await call(
+        geral_headers,
+        "formularios_listar",
+        {"id_ciclo": 1},
+    )
+    assert allowed_form.structuredContent["status"] == "ok"
+
+    skill_name = "Skill Read Access"
+    skill_created = await call(
+        read_headers,
+        "skills_criar",
+        {
+            "conteudo_markdown": (
+                f"# {skill_name}\n\n# objetivo\n\nResumir resultados.\n\n# regras\n"
+            )
+        },
+    )
+    assert skill_created.structuredContent["status"] == "ok"
+    command = skill_created.structuredContent["skill"]["comando"]
+    skill_deleted = await call(read_headers, "skills_excluir", {"nome": command})
+    assert skill_deleted.structuredContent["status"] == "ok"

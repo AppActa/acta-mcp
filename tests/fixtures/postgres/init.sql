@@ -179,6 +179,8 @@ INSERT INTO usuario_sistema VALUES
     (1, 1, 'Ana Gestora', 'ana@acta.local', 'GESTOR', 'ATIVO'),
     (2, 1, 'Bruno Analista', 'bruno@acta.local', 'COLABORADOR', 'ATIVO'),
     (3, 1, 'Carla Operações', 'carla@acta.local', 'COLABORADOR', 'ATIVO'),
+    (4, 1, 'Daniel Admin', 'admin@acta.local', 'ADMIN', 'ATIVO'),
+    (5, 1, 'Elisa Sem Ciclo', 'elisa@acta.local', 'COLABORADOR', 'ATIVO'),
     (20, 2, 'Usuário Externo', 'externo@outra.local', 'GESTOR', 'ATIVO');
 
 INSERT INTO colaborador (

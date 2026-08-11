@@ -42,7 +42,7 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
 
     @mcp.tool(name="ciclo_ishikawa", structured_output=True)
     def ciclo_ishikawa(id_ciclo: int, limit: int = 10) -> dict[str, Any]:
-        """Consulta o diagrama de Ishikawa do ciclo no MongoDB."""
+        """Consulta o diagrama de Ishikawa autorizado do ciclo."""
         context = get_request_context()
         return execute_tool(
             name="ciclo_ishikawa",

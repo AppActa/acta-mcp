@@ -119,7 +119,7 @@ def register_memory_tools(mcp: FastMCP, container: Container) -> None:
 
     @mcp.tool(name="memoria_excluir", structured_output=True)
     def excluir(id_memoria: str) -> dict[str, Any]:
-        """Exclui logicamente uma memória e remove seu vetor do Qdrant."""
+        """Exclui uma memória do usuário conforme a política de retenção."""
         context = get_request_context()
         return execute("memoria_excluir", lambda: service.excluir(context, id_memoria=id_memoria))
 

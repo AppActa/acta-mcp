@@ -1,13 +1,13 @@
 """
 Base de conhecimento estática do Chatbot ACTA.
 
-Este arquivo serve como fonte documental para o agente RAG/FAQ.
-Ele NÃO substitui consultas reais ao PostgreSQL ou MongoDB.
+Este arquivo serve como fonte documental para dúvidas conceituais do ACTA.
+Ele NÃO substitui consultas de informações atuais autorizadas.
 
 Uso esperado:
 - Explicar funcionalidades do ACTA.
 - Responder dúvidas conceituais sobre PDCA, Ishikawa, 5 Porquês, 5W2H etc.
-- Ajudar o roteador a entender intenções.
+- Ajudar a identificar dúvidas conceituais.
 - Servir como base inicial para embeddings/vetorização.
 
 Perguntas sobre dados reais do ciclo, como:
@@ -16,7 +16,7 @@ Perguntas sobre dados reais do ciclo, como:
 - "A meta foi atingida?"
 - "Quem deve assumir essa tarefa?"
 
-devem ser roteadas para agentes especialistas conectados aos bancos.
+devem ser atendidas pelas funcionalidades autorizadas para dados atuais.
 """
 
 ACTA_DOCS = [
@@ -151,21 +151,21 @@ ACTA_DOCS = [
     },
     {
         "id": "chatbot_dados_reais_vs_faq",
-        "title": "Diferença entre FAQ e Dados Reais do Ciclo",
+        "title": "Diferença entre conceitos e dados atuais do ciclo",
         "section": "Chatbot",
         "phase": None,
         "audience": ["gestor"],
-        "tags": ["rag", "faq", "dados reais", "roteador", "agentes"],
-        "related_agents": ["rag", "roteador"],
+        "tags": ["faq", "dados atuais", "conceitos"],
+        "related_agents": ["rag"],
         "content": (
-            "Perguntas conceituais, como 'O que é 5W2H?' ou 'Como funciona o Ishikawa?', devem ser respondidas pelo agente RAG. "
-            "Perguntas sobre dados reais, como 'Quais tarefas estão atrasadas neste ciclo?' ou 'A meta foi atingida?', devem ser "
-            "roteadas para agentes especialistas conectados ao PostgreSQL, MongoDB ou base de lições aprendidas."
+            "Perguntas conceituais, como 'O que é 5W2H?' ou 'Como funciona o Ishikawa?', são respondidas pela base de conhecimento. "
+            "Perguntas sobre dados atuais, como 'Quais tarefas estão atrasadas neste ciclo?' ou 'A meta foi atingida?', dependem "
+            "das funcionalidades autorizadas e do contexto do ciclo."
         ),
         "example_questions": [
-            "Qual agente responde perguntas conceituais?",
-            "Qual agente consulta dados reais?",
-            "Quando usar RAG e quando consultar o banco?",
+            "Como tirar dúvidas conceituais?",
+            "Como consultar dados atuais?",
+            "Qual a diferença entre conceitos e informações do ciclo?",
         ],
     },
     # =========================================================
@@ -178,7 +178,7 @@ ACTA_DOCS = [
         "phase": None,
         "audience": ["gestor"],
         "tags": ["segurança", "permissões", "acesso", "dados"],
-        "related_agents": ["guardrail", "sql", "mongodb"],
+        "related_agents": ["guardrail"],
         "content": (
             "O ACTA deve respeitar as permissões do usuário logado. Um gestor só pode acessar informações relacionadas "
             "à sua empresa, setor, projeto ou ciclo autorizado. O chatbot não deve permitir acesso a dados de outras empresas, "
@@ -296,7 +296,7 @@ ACTA_DOCS = [
         "phase": "P",
         "audience": ["gestor", "colaborador"],
         "tags": ["fenômeno", "formulário", "ocorrência", "coleta", "plan"],
-        "related_agents": ["rag", "formularios", "mongodb"],
+        "related_agents": ["rag", "formularios"],
         "content": (
             "Na análise de fenômeno, o gestor configura formulários para coletar dados sobre as ocorrências do problema. "
             "Os colaboradores podem registrar sintomas, envolvidos, horário, localização, clima e campos personalizados. "
@@ -314,17 +314,17 @@ ACTA_DOCS = [
         "section": "Plan",
         "phase": "P",
         "audience": ["gestor"],
-        "tags": ["formulários", "campos personalizados", "mongodb", "coleta"],
-        "related_agents": ["rag", "formularios", "mongodb"],
+        "tags": ["formulários", "campos personalizados", "coleta"],
+        "related_agents": ["rag", "formularios"],
         "content": (
             "O gestor pode configurar formulários personalizados para coletar informações específicas do ciclo. Alguns campos podem ser "
             "predefinidos, como sintoma, colaborador envolvido, data, localização e clima. Outros campos podem ser criados pelo gestor. "
-            "Por serem flexíveis e variáveis, respostas de formulários são bons candidatos para armazenamento em MongoDB."
+            "A flexibilidade permite adaptar a coleta às necessidades de cada ciclo."
         ),
         "example_questions": [
             "Posso criar campos personalizados?",
             "Quais campos existem nos formulários?",
-            "Por que usar MongoDB nos formulários?",
+            "Como funcionam os campos flexíveis dos formulários?",
         ],
     },
     {
@@ -372,7 +372,7 @@ ACTA_DOCS = [
         "phase": "P",
         "audience": ["gestor", "colaborador"],
         "tags": ["ishikawa", "6m", "causas", "espinha de peixe", "plan"],
-        "related_agents": ["rag", "formularios", "mongodb"],
+        "related_agents": ["rag", "formularios"],
         "content": (
             "O diagrama de Ishikawa, também conhecido como espinha de peixe, é usado para organizar possíveis causas de um problema. "
             "No ACTA, ele pode ser baseado nas categorias dos 6M: Máquina, Método, Mão de Obra, Meio Ambiente, Medidas e Matéria-Prima. "
@@ -410,7 +410,7 @@ ACTA_DOCS = [
         "phase": "P",
         "audience": ["gestor"],
         "tags": ["5 porquês", "causa raiz", "hipóteses", "análise"],
-        "related_agents": ["rag", "formularios", "mongodb"],
+        "related_agents": ["rag", "formularios"],
         "content": (
             "A técnica dos 5 Porquês é usada para aprofundar a análise de uma hipótese e chegar à causa raiz. "
             "No ACTA, hipóteses fortes devem passar obrigatoriamente por essa análise. O gestor também pode aplicar os 5 Porquês "
@@ -545,7 +545,7 @@ ACTA_DOCS = [
         "phase": "D",
         "audience": ["gestor", "colaborador"],
         "tags": ["tarefas", "responsáveis", "prazo", "status"],
-        "related_agents": ["rag", "tarefas", "sql"],
+        "related_agents": ["rag", "tarefas"],
         "content": (
             "As tarefas são ações atribuídas a colaboradores dentro do ciclo. Elas podem conter responsável, prazo, descrição, relação com meta, "
             "status, evidências, observações e justificativas. Perguntas sobre tarefas reais do ciclo devem ser respondidas pelo agente de tarefas "
@@ -619,7 +619,7 @@ ACTA_DOCS = [
         "phase": "D",
         "audience": ["gestor", "colaborador"],
         "tags": ["evidências", "anexos", "execução", "tarefas"],
-        "related_agents": ["rag", "tarefas", "mongodb"],
+        "related_agents": ["rag", "tarefas"],
         "content": (
             "Durante a execução das tarefas, os colaboradores podem registrar evidências como arquivos, observações, datas, imagens, documentos "
             "ou comentários. As evidências ajudam o gestor a validar se a ação foi executada corretamente e se houve aderência ao plano de ação."
@@ -845,7 +845,7 @@ ACTA_DOCS = [
         "phase": "A",
         "audience": ["gestor", "colaborador"],
         "tags": ["lições aprendidas", "histórico", "aprendizado", "act"],
-        "related_agents": ["rag", "licoes_aprendidas", "mongodb"],
+        "related_agents": ["rag", "licoes_aprendidas"],
         "content": (
             "As lições aprendidas registram conhecimentos importantes obtidos durante o ciclo. Elas podem descrever o que funcionou, "
             "o que não funcionou, problemas que permaneceram, ações eficazes, causas recorrentes e recomendações para ciclos futuros. "

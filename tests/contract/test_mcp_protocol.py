@@ -78,27 +78,27 @@ TOOL_ARGUMENTS = {
     "predicoes_respostas_atipicas": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
     "predicoes_tema_formulario": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
     "predicoes_recorrencia_problema": {"id_ciclo": 1},
-    "memoria_garantir_sessao": {"session_id": "contract-session"},
+    "memoria_garantir_sessao": {"session_id": "contract-session-admin"},
     "memoria_salvar_mensagem": {
-        "session_id": "contract-session",
+        "session_id": "contract-session-admin",
         "role": "usuario",
         "content": "Prefiro respostas objetivas.",
         "agent": "pytest",
     },
     "memoria_obter_contexto": {
-        "session_id": "contract-session",
+        "session_id": "contract-session-admin",
         "pergunta": "Como devo responder?",
     },
-    "memoria_material_resumo": {"session_id": "contract-session"},
+    "memoria_material_resumo": {"session_id": "contract-session-admin"},
     "memoria_atualizar_resumo": {
-        "session_id": "contract-session",
+        "session_id": "contract-session-admin",
         "resumo": "O usuário prefere respostas objetivas.",
         "resumido_ate": datetime.now(UTC).isoformat(),
     },
     "memoria_registrar": {
         "tipo": "preferencia",
         "conteudo": "Prefere respostas objetivas",
-        "session_id_origem": "contract-session",
+        "session_id_origem": "contract-session-admin",
     },
     "memoria_buscar": {"pergunta": "Como o usuário prefere as respostas?"},
     "memoria_listar": {},
@@ -165,9 +165,9 @@ def mcp_url(integration_settings):
 @pytest.mark.asyncio
 async def test_list_tools_and_call_tool(mcp_url) -> None:
     headers = {
-        "X-Acta-Usuario-Id": "1",
+        "X-Acta-Usuario-Id": "2",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "read",
+        "X-Acta-Permissoes": "admin",
     }
     async with streamablehttp_client(mcp_url, headers=headers) as streams:
         read_stream, write_stream, _ = streams
@@ -194,9 +194,9 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
 @pytest.mark.asyncio
 async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
     headers = {
-        "X-Acta-Usuario-Id": "1",
+        "X-Acta-Usuario-Id": "4",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "admin",
+        "X-Acta-Permissoes": "read",
     }
     async with streamablehttp_client(mcp_url, headers=headers) as streams:
         read_stream, write_stream, _ = streams
@@ -247,7 +247,7 @@ async def test_access_levels(mcp_url) -> None:
     read_headers = {
         "X-Acta-Usuario-Id": "2",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "read",
+        "X-Acta-Permissoes": "admin",
     }
     forbidden_create = await call(
         read_headers,
@@ -263,7 +263,11 @@ async def test_access_levels(mcp_url) -> None:
     )
     assert forbidden_create.structuredContent["status"] == "forbidden"
 
-    create_headers = {**read_headers, "X-Acta-Permissoes": "create"}
+    create_headers = {
+        "X-Acta-Usuario-Id": "1",
+        "X-Acta-Empresa-Id": "1",
+        "X-Acta-Permissoes": "read",
+    }
     forbidden_form = await call(
         create_headers,
         "formularios_listar",
@@ -289,13 +293,29 @@ async def test_access_levels(mcp_url) -> None:
         )
         assert forbidden_indirect_form_access.structuredContent["status"] == "forbidden"
 
-    geral_headers = {**read_headers, "X-Acta-Permissoes": "geral"}
+    geral_headers = {
+        "X-Acta-Usuario-Id": "4",
+        "X-Acta-Empresa-Id": "1",
+        "X-Acta-Permissoes": "read",
+    }
     allowed_form = await call(
         geral_headers,
         "formularios_listar",
         {"id_ciclo": 1},
     )
     assert allowed_form.structuredContent["status"] == "ok"
+
+    unlinked_headers = {
+        "X-Acta-Usuario-Id": "5",
+        "X-Acta-Empresa-Id": "1",
+        "X-Acta-Permissoes": "admin",
+    }
+    forbidden_cycle = await call(
+        unlinked_headers,
+        "ciclo_visao_geral",
+        {"id_ciclo": 1},
+    )
+    assert forbidden_cycle.structuredContent["status"] == "forbidden"
 
     skill_name = "Skill Read Access"
     skill_created = await call(

@@ -4,6 +4,7 @@ from typing import Any
 
 from acta_mcp.core.config import Settings
 from acta_mcp.core.context import (
+    RequestContext,
     build_context,
     reset_request_context,
     set_request_context,
@@ -23,9 +24,15 @@ ASGIApp = Callable[
 class ActaAuthenticationMiddleware:
     """Autentica MCP HTTP sem BaseHTTPMiddleware e injeta contexto via ContextVar."""
 
-    def __init__(self, app: ASGIApp, settings: Settings) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        settings: Settings,
+        context_resolver: Callable[[RequestContext], RequestContext] | None = None,
+    ) -> None:
         self.app = app
         self.settings = settings
+        self.context_resolver = context_resolver
 
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         if scope["type"] != "http" or scope.get("path") == "/health":
@@ -79,12 +86,14 @@ class ActaAuthenticationMiddleware:
                 header="X-Acta-Empresa-Id",
             )
 
-        return build_context(
+        context = build_context(
             usuario_id=usuario_id,
             empresa_id=empresa_id,
-            permissoes=headers.get("x-acta-permissoes"),
             trace_id=headers.get("x-trace-id"),
         )
+        if self.context_resolver is not None:
+            return self.context_resolver(context)
+        return context
 
     @staticmethod
     async def _reject(send: Callable, status: HTTPStatus, message: str) -> None:

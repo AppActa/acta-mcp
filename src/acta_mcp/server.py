@@ -169,7 +169,11 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
             container.close()
 
     app.router.lifespan_context = application_lifespan
-    return ActaAuthenticationMiddleware(app, settings)
+    return ActaAuthenticationMiddleware(
+        app,
+        settings,
+        context_resolver=container.access.resolve_request_context,
+    )
 
 
 def build_application(settings: Settings):

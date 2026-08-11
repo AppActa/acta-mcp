@@ -79,7 +79,6 @@ class CiclosService:
         )
         return {
             "status": "ok",
-            "collection": collection,
             "id_ciclo": id_ciclo,
             "count": len(documents),
             "documentos": documents,

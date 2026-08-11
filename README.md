@@ -14,7 +14,7 @@ flowchart LR
     D --> G["Qdrant Cloud"]
 ```
 
-O servidor usa Streamable HTTP stateless em `/mcp`, conforme a recomendação do SDK MCP oficial. Cada requisição recebe `usuario_id`, `empresa_id`, permissões e `trace_id` do contexto autenticado. Nenhuma tool aceita a empresa como fonte de verdade.
+O servidor usa Streamable HTTP stateless em `/mcp`, conforme a recomendação do SDK MCP oficial. Cada requisição recebe `usuario_id`, `empresa_id` e `trace_id` do contexto autenticado. O nível é derivado de `usuario_sistema.tipo_usuario`, e o vínculo ao ciclo é validado em `pdca.usuario_ciclo`.
 
 ## Domínios e tools
 
@@ -30,7 +30,7 @@ O servidor usa Streamable HTTP stateless em `/mcp`, conforme a recomendação do
 - Memória: 11 tools.
 - RAG/FAQ: 1 tool.
 
-Total: 63 tools, além dos resources `acta://catalog/tools`, `acta://schema/database` e `acta://documentation`, e dos prompts `analisar_ciclo` e `gerar_relatorio_ciclo`.
+Total: 63 tools, além dos resources `acta://catalog/tools` e `acta://documentation`, e dos prompts `analisar_ciclo` e `gerar_relatorio_ciclo`.
 
 Não são publicadas tools de SQL livre nem de consulta genérica ao MongoDB.
 
@@ -81,7 +81,6 @@ ACTA_MCP_URL=http://127.0.0.1:8000/mcp
 ACTA_MCP_API_KEY=mesmo-segredo-do-servidor
 ACTA_MCP_USUARIO_ID=1
 ACTA_MCP_EMPRESA_ID=1
-ACTA_MCP_PERMISSOES=read
 ```
 
 Os módulos em `acta-ai/tools/` são apenas proxies LangChain. SQL, queries MongoDB, recuperação documental e regras de autorização ficam neste servidor.

@@ -145,7 +145,6 @@ class FormulariosService:
         ]
         return {
             "status": "ok",
-            "collection": "formularios",
             "id_ciclo": id_ciclo,
             "count": len(forms),
             "formularios": forms,
@@ -185,7 +184,6 @@ class FormulariosService:
         )
         return {
             "status": "ok",
-            "collection": "respostas_formulario",
             "id_ciclo": id_ciclo,
             "id_formulario": query.id_formulario,
             "count": len(responses),

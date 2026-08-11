@@ -1,8 +1,10 @@
 from collections.abc import Iterable, Sequence
+from dataclasses import replace
 from typing import Any
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
+from acta_mcp.core.security import current_access_level
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 
 TAREFA_ID_FIELDS = ("id_tarefa", "tarefa_id", "idTarefa", "tarefaId")
@@ -61,20 +63,57 @@ class AccessService:
     def __init__(self, postgres: PostgresRepository) -> None:
         self.postgres = postgres
 
-    def ensure_cycle(self, context: RequestContext, id_ciclo: int) -> None:
+    def resolve_request_context(self, context: RequestContext) -> RequestContext:
+        """Deriva empresa e acesso do usuário salvo no banco, nunca do cliente."""
+
         row = self.postgres.fetch_one(
-            "SELECT id_empresa FROM pdca.ciclo WHERE id = %s;",
-            (id_ciclo,),
+            """
+            SELECT id, id_empresa, tipo_usuario, status
+            FROM usuario_sistema
+            WHERE id = %s;
+            """,
+            (context.usuario_id,),
+        )
+        if row is None:
+            raise ValueError("Usuário autenticado não foi encontrado.")
+        if row["status"] != "ATIVO":
+            raise ValueError("Usuário autenticado não está ativo.")
+        if row["id_empresa"] != context.empresa_id:
+            raise ValueError("Usuário autenticado não pertence à empresa informada.")
+
+        level_by_user_type = {
+            "ADMIN": "admin",
+            "GESTOR": "create",
+            "COLABORADOR": "read",
+        }
+        level = level_by_user_type.get(row["tipo_usuario"])
+        if level is None:
+            raise ValueError("Tipo do usuário autenticado não é reconhecido.")
+        return replace(context, permissoes=frozenset({level}))
+
+    def ensure_cycle(self, context: RequestContext, id_ciclo: int) -> dict[str, Any]:
+        row = self.postgres.fetch_one(
+            """
+            SELECT c.id, c.id_empresa, c.id_responsavel, uc.papel_ciclo
+            FROM pdca.ciclo c
+            LEFT JOIN pdca.usuario_ciclo uc
+              ON uc.id_ciclo = c.id AND uc.id_usuario = %s
+            WHERE c.id = %s;
+            """,
+            (context.usuario_id, id_ciclo),
         )
         if row is None:
             raise NotFoundError(f"Nenhum ciclo encontrado com id {id_ciclo}.")
         if row["id_empresa"] != context.empresa_id:
             raise AuthorizationError("O usuário não possui acesso a este ciclo.")
+        if current_access_level(context) != "admin" and row.get("papel_ciclo") is None:
+            raise AuthorizationError("O usuário não está vinculado a este ciclo.")
+        return row
 
     def ensure_task(self, context: RequestContext, id_tarefa: int) -> None:
         row = self.postgres.fetch_one(
             """
-            SELECT c.id_empresa
+            SELECT c.id AS id_ciclo, c.id_empresa
             FROM pdca.tarefa t
             JOIN pdca.plano_acao pa ON pa.id = t.id_plano_acao
             JOIN pdca.ciclo c ON c.id = pa.id_ciclo
@@ -84,8 +123,7 @@ class AccessService:
         )
         if row is None:
             raise NotFoundError(f"Nenhuma tarefa encontrada com id {id_tarefa}.")
-        if row["id_empresa"] != context.empresa_id:
-            raise AuthorizationError("O usuário não possui acesso a esta tarefa.")
+        self.ensure_cycle(context, row["id_ciclo"])
 
     def ensure_collaborator(self, context: RequestContext, id_colaborador: int) -> None:
         row = self.postgres.fetch_one(
@@ -122,8 +160,7 @@ class AccessService:
         )
         if row is None:
             raise NotFoundError(f"Nenhum plano de ação encontrado com id {id_plano_acao}.")
-        if row["id_empresa"] != context.empresa_id:
-            raise AuthorizationError("O plano de ação não pertence à empresa autenticada.")
+        self.ensure_cycle(context, row["id_ciclo"])
         return row
 
     def ensure_problem(
@@ -144,8 +181,7 @@ class AccessService:
         )
         if row is None:
             raise NotFoundError(f"Nenhum problema encontrado com id {id_problema}.")
-        if row["id_empresa"] != context.empresa_id:
-            raise AuthorizationError("O problema não pertence à empresa autenticada.")
+        self.ensure_cycle(context, row["id_ciclo"])
         if id_ciclo is not None and row["id_ciclo"] != id_ciclo:
             raise AuthorizationError("O problema não pertence ao ciclo informado.")
         return row

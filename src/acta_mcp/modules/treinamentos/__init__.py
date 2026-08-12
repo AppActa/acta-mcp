@@ -1,0 +1,2 @@
+"""Criação estruturada de treinamentos."""
+

@@ -233,6 +233,7 @@ class PredicoesRepository:
     ) -> list[dict[str, Any]]:
         query = """
             SELECT m.id AS id_meta, m.objetivo, m.status,
+                   COALESCE(m.unidade, '') AS unidade,
                    COALESCE(m.valor_base, 0) AS valor_base,
                    COALESCE(m.valor_alvo, 0) AS valor_alvo,
                    CASE m.prioridade WHEN 'CRITICA' THEN 4 WHEN 'ALTA' THEN 3

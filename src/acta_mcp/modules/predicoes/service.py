@@ -331,6 +331,9 @@ class PredicoesService:
                 "id_meta": row["id_meta"],
                 "objetivo": row["objetivo"],
                 "status_atual": row["status"],
+                "valor_base": row.get("valor_base"),
+                "valor_alvo": row.get("valor_alvo"),
+                "unidade": row.get("unidade"),
             }
             if predictions:
                 item.update(predictions[index])

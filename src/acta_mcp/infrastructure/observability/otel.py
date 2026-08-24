@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from functools import lru_cache
 from typing import Any
 
-from dotenv import load_dotenv
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -20,18 +18,18 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from acta_mcp.core.config import env_bool, env_str, set_default_env
+
 _configured = False
-load_dotenv()
-load_dotenv(".env.local", override=True)
 
 
 def _is_enabled() -> bool:
-    if "pytest" in sys.modules and os.getenv("ACTA_OBSERVABILITY_IN_TESTS", "false").lower() != "true":
+    if "pytest" in sys.modules and not env_bool("ACTA_OBSERVABILITY_IN_TESTS", False):
         return False
-    if os.getenv("ACTA_OBSERVABILITY_ENABLED", "true").lower() in {"0", "false", "no"}:
+    if not env_bool("ACTA_OBSERVABILITY_ENABLED", True):
         return False
     return any(
-        os.getenv(name)
+        env_str(name)
         for name in (
             "OTEL_EXPORTER_OTLP_ENDPOINT",
             "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
@@ -47,14 +45,14 @@ def configure_observability(default_service_name: str) -> bool:
     if not _is_enabled():
         return False
 
-    os.environ.setdefault("OTEL_SERVICE_NAME", default_service_name)
-    os.environ.setdefault("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
+    set_default_env("OTEL_SERVICE_NAME", default_service_name)
+    set_default_env("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
 
     resource = Resource.create(
         {
-            "service.name": os.getenv("OTEL_SERVICE_NAME", default_service_name),
+            "service.name": env_str("OTEL_SERVICE_NAME", default_service_name),
             "service.namespace": "acta",
-            "deployment.environment": os.getenv("ACTA_ENV", "development"),
+            "deployment.environment": env_str("ACTA_ENV", "development"),
         }
     )
 

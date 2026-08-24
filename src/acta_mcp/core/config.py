@@ -1,8 +1,28 @@
+import os
 from functools import lru_cache
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+load_dotenv()
+load_dotenv(".env.local", override=True)
+
+
+def env_str(name: str, default: str | None = None) -> str | None:
+    return os.getenv(name, default)
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def set_default_env(name: str, value: str) -> None:
+    os.environ.setdefault(name, value)
 
 
 class Settings(BaseSettings):

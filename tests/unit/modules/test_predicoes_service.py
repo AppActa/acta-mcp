@@ -131,6 +131,7 @@ class FakeRepository:
                 "status": "EM_ANDAMENTO",
                 "valor_base": 100,
                 "valor_alvo": 80,
+                "unidade": "%",
                 "prioridade_ordem": 3,
                 "prazo_dias": 30,
             }
@@ -212,3 +213,6 @@ def test_all_prediction_services_return_trained_results() -> None:
 
     assert all(result["status"] == "ok" for result in results)
     assert all(result["previsao_disponivel"] is True for result in results)
+    assert results[6]["metas"][0]["valor_base"] == 100
+    assert results[6]["metas"][0]["valor_alvo"] == 80
+    assert results[6]["metas"][0]["unidade"] == "%"

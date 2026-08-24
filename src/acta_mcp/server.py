@@ -12,6 +12,7 @@ from acta_mcp.core.config import Settings
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
 from acta_mcp.infrastructure.mongodb.connection import create_mongo_client
 from acta_mcp.infrastructure.observability.audit import AuditLogger
+from acta_mcp.infrastructure.observability.otel import instrument_asgi_app
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 from acta_mcp.infrastructure.postgres.connection import create_postgres_pool
 from acta_mcp.infrastructure.qdrant.connection import create_qdrant_client
@@ -169,11 +170,12 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
             container.close()
 
     app.router.lifespan_context = application_lifespan
-    return ActaAuthenticationMiddleware(
+    app = ActaAuthenticationMiddleware(
         app,
         settings,
         context_resolver=container.access.resolve_request_context,
     )
+    return instrument_asgi_app(app)
 
 
 def build_application(settings: Settings):

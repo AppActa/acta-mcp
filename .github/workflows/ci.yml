@@ -24,9 +24,14 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Instalar dependências travadas
-        run: uv sync --locked --all-groups --group dev
-              
+      - name: Instalar dependências
+        run: uv sync --locked --extra dev
+
+      - name: Verificar qualidade com Ruff
+        run: uv run ruff check .
+
+      - name: Verificar formatação
+        run: uv run ruff format --check .
 
       - name: Testar e exigir cobertura mínima de 80%
-        run: uv run --group dev pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+        run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=80

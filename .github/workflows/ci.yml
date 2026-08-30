@@ -28,4 +28,4 @@ jobs:
         run: uv sync --locked --all-groups
 
       - name: Testar e exigir cobertura mínima de 80%
-        run: uv run pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+        run: uv run --group dev pytest --cov=. --cov-report=term-missing --cov-fail-under=80

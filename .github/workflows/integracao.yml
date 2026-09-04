@@ -11,8 +11,11 @@ jobs:
   testes:
     runs-on: ubuntu-latest
     environment: test
-
+    
     env:
+      ACTA_ENV: test
+      ACTA_AUTH_MODE: disabled
+    
       TEST_DATABASE_URL: postgresql://acta:acta@localhost:5433/acta
       TEST_MONGODB_URI: mongodb://localhost:27018
       TEST_QDRANT_CLUSTER_ENDPOINT: ${{ secrets.TEST_QDRANT_CLUSTER_ENDPOINT }}

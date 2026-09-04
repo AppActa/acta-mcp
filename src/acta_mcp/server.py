@@ -69,9 +69,9 @@ def create_container(settings: Settings) -> Container:
         MemoryRepository(
             mongo.database,
             qdrant_client,
-            collection_name=settings.qdrant_memory_collection_name,
-            embedding_model=settings.qdrant_embedding_model,
-            vector_size=settings.qdrant_vector_size,
+            messages_collection_name=settings.qdrant_memory_messages_collection_name,
+            memories_collection_name=settings.qdrant_memory_collection_name,
+            vector_size=settings.qdrant_memory_vector_size,
             message_retention_days=settings.acta_memory_message_retention_days,
             inferred_retention_days=settings.acta_memory_inferred_retention_days,
         ),

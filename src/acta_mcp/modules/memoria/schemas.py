@@ -9,7 +9,7 @@ class SessionInput(BaseModel):
 
     @field_validator("session_id")
     @classmethod
-    def clean_session_id(cls, value: str) -> str:
+    def clean_session_id(_cls, value: str) -> str:
         value = value.strip()
         if not value:
             raise ValueError("session_id é obrigatório.")

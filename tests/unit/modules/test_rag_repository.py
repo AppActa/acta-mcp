@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from qdrant_client import models
 
+from acta_mcp.modules.rag import repository as rag_repository
 from acta_mcp.modules.rag.documents import ACTA_DOCS
 from acta_mcp.modules.rag.repository import FaqRepository
 
@@ -45,7 +46,12 @@ class FakeQdrantClient:
         )
 
 
-def test_ensure_index_creates_collection_and_upserts_documents() -> None:
+def test_ensure_index_creates_collection_and_upserts_explicit_vectors(monkeypatch) -> None:
+    monkeypatch.setattr(
+        rag_repository,
+        "gerar_embeddings_batch",
+        lambda texts: [[float(index)] * 768 for index, _ in enumerate(texts)],
+    )
     client = FakeQdrantClient()
     repository = FaqRepository(  # type: ignore[arg-type]
         client,
@@ -62,10 +68,11 @@ def test_ensure_index_creates_collection_and_upserts_documents() -> None:
     assert client.created[1].distance == models.Distance.COSINE
     assert len(client.upserted) == len(ACTA_DOCS)
     assert all(point.payload["dataset"] == "ACTA_DOCS" for point in client.upserted)
-    assert all(isinstance(point.vector, models.Document) for point in client.upserted)
+    assert all(isinstance(point.vector, list) and len(point.vector) == 768 for point in client.upserted)
 
 
-def test_search_maps_qdrant_points_to_tool_contract() -> None:
+def test_search_maps_qdrant_points_to_tool_contract(monkeypatch) -> None:
+    monkeypatch.setattr(rag_repository, "gerar_embedding", lambda _: [0.5] * 768)
     repository = FaqRepository(  # type: ignore[arg-type]
         FakeQdrantClient(),
         collection_name="acta_faq_test",

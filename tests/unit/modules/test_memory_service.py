@@ -9,6 +9,16 @@ class FakeMemoryRepository:
         self.consent = {"modo": "somente_explicitas", "retencao_dias": None}
         self.memories = []
         self.summary = ""
+        self.summary_messages = [
+            {
+                "role": "usuario",
+                "content": f"Mensagem {index}",
+                "criada_em": datetime.now(UTC).isoformat(),
+            }
+            for index in range(4)
+        ]
+        self.chats = []
+        self.last_list_limit = None
 
     def ensure_session(self, context, session_id, metadata=None):
         return {"session_id": session_id, "resumo": self.summary}
@@ -23,15 +33,14 @@ class FakeMemoryRepository:
         )
 
     def summary_material(self, context, session_id):
-        messages = [
-            {
-                "role": "usuario",
-                "content": f"Mensagem {index}",
-                "criada_em": datetime.now(UTC).isoformat(),
-            }
-            for index in range(4)
-        ]
-        return {"session_id": session_id, "resumo": self.summary}, messages
+        return {"session_id": session_id, "resumo": self.summary}, self.summary_messages
+
+    def close_session_if_has_messages(self, context, session_id):
+        return bool(self.summary_messages)
+
+    def list_chats(self, context, limit):
+        self.last_list_limit = limit
+        return self.chats
 
     def update_summary(self, context, session_id, summary, summarized_until):
         self.summary = summary
@@ -116,6 +125,38 @@ def test_summary_is_incremental_and_threshold_based() -> None:
     assert material["deve_resumir"] is True
     assert material["resumido_ate"] is not None
     assert "Mensagem 3" in material["conversa_formatada"]
+
+
+def test_forced_summary_uses_nonempty_conversation_below_threshold() -> None:
+    repository = FakeMemoryRepository()
+    repository.summary_messages = repository.summary_messages[:1]
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=10)
+
+    material = service.material_resumo(CONTEXT, session_id="session-1", forcar=True)
+
+    assert material["tem_mensagens"] is True
+    assert material["deve_resumir"] is True
+
+
+def test_close_empty_session_does_not_close_a_chat() -> None:
+    repository = FakeMemoryRepository()
+    repository.summary_messages = []
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=4)
+
+    result = service.encerrar_sessao(CONTEXT, session_id="missing")
+
+    assert result == {"status": "ok", "encerrada": False, "tem_mensagens": False}
+
+
+def test_list_chats_clamps_limit_and_returns_repository_results() -> None:
+    repository = FakeMemoryRepository()
+    repository.chats = [{"session_id": "recent", "total_mensagens": 2}]
+    service = MemoryService(repository, recent_messages=8, summary_every_messages=4)
+
+    result = service.listar_chats(CONTEXT, limit=999)
+
+    assert result == {"status": "ok", "count": 1, "chats": repository.chats}
+    assert repository.last_list_limit == 100
 
 
 def test_disabled_consent_stops_session_persistence_and_retrieval() -> None:

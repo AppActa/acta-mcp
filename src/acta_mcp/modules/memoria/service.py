@@ -128,11 +128,14 @@ class MemoryService:
             "mensagens_recentes": messages,
         }
 
-    def material_resumo(self, context: RequestContext, *, session_id: str) -> dict[str, Any]:
+    def material_resumo(
+        self, context: RequestContext, *, session_id: str, forcar: bool = False
+    ) -> dict[str, Any]:
         data = SessionInput(session_id=session_id)
         if self.repository.get_consent(context)["modo"] == "desativado":
             return {
                 "status": "ok",
+                "tem_mensagens": False,
                 "deve_resumir": False,
                 "resumo_anterior": "",
                 "mensagens": [],
@@ -143,7 +146,9 @@ class MemoryService:
         last_created = messages[-1]["criada_em"] if messages else None
         return {
             "status": "ok",
-            "deve_resumir": len(messages) >= self.summary_every_messages,
+            "tem_mensagens": bool(messages),
+            "deve_resumir": bool(messages)
+            and (forcar or len(messages) >= self.summary_every_messages),
             "resumo_anterior": session.get("resumo", ""),
             "mensagens": messages,
             "conversa_formatada": _format_messages(messages),
@@ -163,6 +168,15 @@ class MemoryService:
             raise ValueError("resumo é obrigatório.")
         self.repository.update_summary(context, data.session_id, resumo, resumido_ate)
         return {"status": "ok", "session_id": data.session_id}
+
+    def encerrar_sessao(self, context: RequestContext, *, session_id: str) -> dict[str, Any]:
+        data = SessionInput(session_id=session_id)
+        closed = self.repository.close_session_if_has_messages(context, data.session_id)
+        return {"status": "ok", "encerrada": closed, "tem_mensagens": closed}
+
+    def listar_chats(self, context: RequestContext, *, limit: int = 50) -> dict[str, Any]:
+        chats = self.repository.list_chats(context, min(max(limit, 1), 100))
+        return {"status": "ok", "count": len(chats), "chats": chats}
 
     def registrar(self, context: RequestContext, **kwargs: Any) -> dict[str, Any]:
         data = MemoryInput(**kwargs)

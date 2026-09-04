@@ -90,6 +90,8 @@ TOOL_ARGUMENTS = {
         "pergunta": "Como devo responder?",
     },
     "memoria_material_resumo": {"session_id": "contract-session-admin"},
+    "memoria_encerrar_sessao": {"session_id": "contract-session-admin"},
+    "memoria_listar_chats": {},
     "memoria_atualizar_resumo": {
         "session_id": "contract-session-admin",
         "resumo": "O usuário prefere respostas objetivas.",
@@ -176,7 +178,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 63
+            assert len(expected) == 65
 
             response = await session.call_tool(
                 "tarefas_atrasadas",

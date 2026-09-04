@@ -4,6 +4,7 @@ from uuid import UUID, uuid5
 
 from qdrant_client import QdrantClient, models
 
+from acta_mcp.infrastructure.qdrant.connection import gerar_embedding, gerar_embeddings_batch
 from acta_mcp.modules.rag.documents import ACTA_DOCS
 
 FAQ_NAMESPACE = UUID("c77e3733-c428-4f4f-89aa-9e5f5a750594")
@@ -67,26 +68,24 @@ class FaqRepository:
         if not changed:
             return
 
+        vectors = gerar_embeddings_batch([record["embedding_text"] for record in changed])
         self.client.upsert(
             collection_name=self.collection_name,
             wait=True,
             points=[
                 models.PointStruct(
                     id=record["id"],
-                    vector=models.Document(
-                        text=record["embedding_text"],
-                        model=self.embedding_model,
-                    ),
+                    vector=vector,
                     payload=record["payload"],
                 )
-                for record in changed
+                for record, vector in zip(changed, vectors, strict=True)
             ],
         )
 
     def search(self, question: str, limit: int) -> list[dict[str, Any]]:
         response = self.client.query_points(
             collection_name=self.collection_name,
-            query=models.Document(text=question, model=self.embedding_model),
+            query=gerar_embedding(question),
             with_payload=True,
             limit=limit,
         )

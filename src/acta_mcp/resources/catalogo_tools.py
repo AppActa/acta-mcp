@@ -61,6 +61,8 @@ TOOL_CATALOG = {
         "memoria_salvar_mensagem",
         "memoria_obter_contexto",
         "memoria_material_resumo",
+        "memoria_encerrar_sessao",
+        "memoria_listar_chats",
         "memoria_atualizar_resumo",
         "memoria_registrar",
         "memoria_buscar",

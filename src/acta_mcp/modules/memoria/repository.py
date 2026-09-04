@@ -11,6 +11,7 @@ from qdrant_client import QdrantClient, models
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
+from acta_mcp.infrastructure.qdrant.connection import gerar_embedding
 from acta_mcp.infrastructure.serializers import serialize
 
 logger = logging.getLogger(__name__)
@@ -36,8 +37,8 @@ class MemoryRepository:
         database: Database,
         qdrant: QdrantClient,
         *,
-        collection_name: str,
-        embedding_model: str,
+        messages_collection_name: str,
+        memories_collection_name: str,
         vector_size: int,
         message_retention_days: int,
         inferred_retention_days: int,
@@ -47,8 +48,8 @@ class MemoryRepository:
         self.memories = database["memoria_usuario"]
         self.consents = database["memoria_consentimentos"]
         self.qdrant = qdrant
-        self.collection_name = collection_name
-        self.embedding_model = embedding_model
+        self.messages_collection_name = messages_collection_name
+        self.memories_collection_name = memories_collection_name
         self.vector_size = vector_size
         self.message_retention_days = message_retention_days
         self.inferred_retention_days = inferred_retention_days
@@ -69,39 +70,88 @@ class MemoryRepository:
             self.memories.drop_index("expira_em_1")
         self.memories.create_index("expira_em")
         self.consents.create_index([("empresa_id", 1), ("usuario_id", 1)], unique=True)
-        if not self.qdrant.collection_exists(self.collection_name):
+        for collection_name in (self.messages_collection_name, self.memories_collection_name):
+            self._ensure_vector_collection(collection_name)
+        self.cleanup_expired()
+        self._retry_pending_indexes()
+
+    def _ensure_vector_collection(self, collection_name: str) -> None:
+        if not self.qdrant.collection_exists(collection_name):
             self.qdrant.create_collection(
-                collection_name=self.collection_name,
+                collection_name=collection_name,
                 vectors_config=models.VectorParams(
                     size=self.vector_size,
                     distance=models.Distance.COSINE,
                 ),
             )
         else:
-            info = self.qdrant.get_collection(self.collection_name)
-            vectors = info.config.params.vectors
+            vectors = self.qdrant.get_collection(collection_name).config.params.vectors
             if (
                 not isinstance(vectors, models.VectorParams)
                 or vectors.size != self.vector_size
                 or vectors.distance != models.Distance.COSINE
             ):
                 raise ValueError(
-                    f"A collection Qdrant '{self.collection_name}' não é compatível "
+                    f"A collection Qdrant '{collection_name}' não é compatível "
                     f"com vetores cosine de dimensão {self.vector_size}."
                 )
+
         for field_name, schema in (
             ("usuario_id", models.PayloadSchemaType.INTEGER),
             ("empresa_id", models.PayloadSchemaType.INTEGER),
             ("status", models.PayloadSchemaType.KEYWORD),
+            ("session_id", models.PayloadSchemaType.KEYWORD),
             ("tipo", models.PayloadSchemaType.KEYWORD),
         ):
             self.qdrant.create_payload_index(
-                collection_name=self.collection_name,
+                collection_name=collection_name,
                 field_name=field_name,
                 field_schema=schema,
                 wait=True,
             )
-        self.cleanup_expired()
+
+    def _retry_pending_indexes(self) -> None:
+        for message in list(self.messages.find({"indice_status": "pendente"}))[:100]:
+            try:
+                self.qdrant.upsert(
+                    collection_name=self.messages_collection_name,
+                    wait=True,
+                    points=[
+                        models.PointStruct(
+                            id=message["_id"],
+                            vector=gerar_embedding(message["content"]),
+                            payload={
+                                "usuario_id": message["usuario_id"],
+                                "empresa_id": message["empresa_id"],
+                                "session_id": message["session_id"],
+                                "role": message["role"],
+                                "status": "ativa",
+                            },
+                        )
+                    ],
+                )
+            except Exception:  # noqa: BLE001 - tenta novamente na próxima inicialização
+                logger.exception("Não foi possível reindexar mensagem pendente no Qdrant.")
+            else:
+                self.messages.update_one(
+                    {"_id": message["_id"]}, {"$set": {"indice_status": "sincronizado"}}
+                )
+
+        for memory in list(self.memories.find({"indice_status": "pendente", "status": "ativa"}))[:100]:
+            context = RequestContext(
+                usuario_id=memory["usuario_id"],
+                empresa_id=memory["empresa_id"],
+                permissoes=frozenset(),
+                trace_id="memory-reindex",
+            )
+            try:
+                self._upsert_vector(context, memory)
+            except Exception:  # noqa: BLE001 - tenta novamente na próxima inicialização
+                logger.exception("Não foi possível reindexar memória pendente no Qdrant.")
+            else:
+                self.memories.update_one(
+                    {"_id": memory["_id"]}, {"$set": {"indice_status": "sincronizado"}}
+                )
 
     def cleanup_expired(self, context: RequestContext | None = None) -> int:
         query: dict[str, Any] = {
@@ -110,24 +160,40 @@ class MemoryRepository:
         }
         if context is not None:
             query.update(self._owner(context))
-        ids = [item["_id"] for item in self.memories.find(query, {"_id": 1})]
-        if not ids:
+        memory_ids = [item["_id"] for item in self.memories.find(query, {"_id": 1})]
+        message_query: dict[str, Any] = {"expira_em": {"$lte": datetime.now(UTC)}}
+        if context is not None:
+            message_query.update(self._owner(context))
+        message_ids = [item["_id"] for item in self.messages.find(message_query, {"_id": 1})]
+        if not memory_ids and not message_ids:
             return 0
         status = "expirada"
-        try:
-            self.qdrant.delete(
-                collection_name=self.collection_name,
-                points_selector=models.PointIdsList(points=ids),
-                wait=True,
+        if memory_ids:
+            try:
+                self.qdrant.delete(
+                    collection_name=self.memories_collection_name,
+                    points_selector=models.PointIdsList(points=memory_ids),
+                    wait=True,
+                )
+            except Exception:  # noqa: BLE001 - mantém bloqueado no Mongo e tenta depois
+                status = "expirada_indice_pendente"
+                logger.exception("Não foi possível remover vetores de memória expirados do Qdrant.")
+            self.memories.update_many(
+                {"_id": {"$in": memory_ids}},
+                {"$set": {"status": status, "expirada_em": datetime.now(UTC)}},
             )
-        except Exception:  # noqa: BLE001 - mantém bloqueado no Mongo e tenta depois
-            status = "expirada_indice_pendente"
-            logger.exception("Não foi possível remover vetores expirados do Qdrant.")
-        self.memories.update_many(
-            {"_id": {"$in": ids}},
-            {"$set": {"status": status, "expirada_em": datetime.now(UTC)}},
-        )
-        return len(ids)
+        if message_ids:
+            try:
+                self.qdrant.delete(
+                    collection_name=self.messages_collection_name,
+                    points_selector=models.PointIdsList(points=message_ids),
+                    wait=True,
+                )
+            except Exception:  # noqa: BLE001 - deixa a mensagem para uma nova tentativa
+                logger.exception("Não foi possível remover vetores de mensagens expiradas do Qdrant.")
+            else:
+                self.messages.delete_many({"_id": {"$in": message_ids}})
+        return len(memory_ids) + len(message_ids)
 
     def ensure_session(
         self,
@@ -184,6 +250,7 @@ class MemoryRepository:
             "content": sanitize_text(content)[:8000],
             "agent": agent,
             "metadata": metadata,
+            "indice_status": "pendente",
             "criada_em": now,
             "expira_em": now + timedelta(days=self.message_retention_days),
         }
@@ -198,12 +265,39 @@ class MemoryRepository:
                 },
             },
         )
+        try:
+            self.qdrant.upsert(
+                collection_name=self.messages_collection_name,
+                wait=True,
+                points=[
+                    models.PointStruct(
+                        id=document["_id"],
+                        vector=gerar_embedding(document["content"]),
+                        payload={
+                            "usuario_id": context.usuario_id,
+                            "empresa_id": context.empresa_id,
+                            "session_id": session_id,
+                            "role": role,
+                            "status": "ativa",
+                        },
+                    )
+                ],
+            )
+        except Exception:  # noqa: BLE001 - Mongo é a fonte de verdade
+            logger.exception("Não foi possível indexar mensagem no Qdrant.")
+        else:
+            document["indice_status"] = "sincronizado"
+            self.messages.update_one(
+                {"_id": document["_id"]}, {"$set": {"indice_status": "sincronizado"}}
+            )
         return serialize(document)
 
     def session_context(
         self, context: RequestContext, session_id: str, limit: int
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        session = self.ensure_session(context, session_id)
+        session = self._existing_session(context, session_id)
+        if session is None:
+            return {"session_id": session_id, "resumo": ""}, []
         messages = list(
             self.messages.find({"session_id": session_id, **self._owner(context)})
             .sort("criada_em", -1)
@@ -215,12 +309,38 @@ class MemoryRepository:
     def summary_material(
         self, context: RequestContext, session_id: str
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        session = self.ensure_session(context, session_id)
+        session = self._existing_session(context, session_id)
+        if session is None:
+            return {"session_id": session_id, "resumo": ""}, []
         query: dict[str, Any] = {"session_id": session_id, **self._owner(context)}
         if session.get("resumido_ate"):
             query["criada_em"] = {"$gt": session["resumido_ate"]}
         messages = list(self.messages.find(query).sort("criada_em", 1))
         return session, serialize(messages)
+
+    def _existing_session(
+        self, context: RequestContext, session_id: str
+    ) -> dict[str, Any] | None:
+        session = self.sessions.find_one({"session_id": session_id})
+        if session is None:
+            return None
+        if any(session.get(key) != value for key, value in self._owner(context).items()):
+            raise AuthorizationError("A sessão não pertence ao usuário autenticado nesta empresa.")
+        return serialize(session)
+
+    def close_session_if_has_messages(self, context: RequestContext, session_id: str) -> bool:
+        now = datetime.now(UTC)
+        result = self.sessions.update_one(
+            {"session_id": session_id, **self._owner(context), "total_mensagens": {"$gt": 0}},
+            {"$set": {"status": "encerrada", "encerrada_em": now, "atualizada_em": now}},
+        )
+        return result.matched_count == 1
+
+    def list_chats(self, context: RequestContext, limit: int) -> list[dict[str, Any]]:
+        chats = self.sessions.find(
+            {**self._owner(context), "total_mensagens": {"$gt": 0}}
+        ).sort("atualizada_em", -1).limit(limit)
+        return serialize(list(chats))
 
     def update_summary(
         self,
@@ -265,11 +385,15 @@ class MemoryRepository:
             upsert=True,
         )
         if modo == "desativado":
-            ids = [
+            memory_ids = [
                 item["_id"]
                 for item in self.memories.find(
                     {**self._owner(context), "status": "ativa"}, {"_id": 1}
                 )
+            ]
+            message_ids = [
+                item["_id"]
+                for item in self.messages.find(self._owner(context), {"_id": 1})
             ]
             self.memories.update_many(
                 {**self._owner(context), "status": "ativa"},
@@ -277,9 +401,17 @@ class MemoryRepository:
             )
             self.messages.delete_many(self._owner(context))
             self.sessions.delete_many(self._owner(context))
-            if ids:
+            if memory_ids:
                 self.qdrant.delete(
-                    self.collection_name, points_selector=models.PointIdsList(points=ids), wait=True
+                    self.memories_collection_name,
+                    points_selector=models.PointIdsList(points=memory_ids),
+                    wait=True,
+                )
+            if message_ids:
+                self.qdrant.delete(
+                    self.messages_collection_name,
+                    points_selector=models.PointIdsList(points=message_ids),
+                    wait=True,
                 )
         return self.get_consent(context)
 
@@ -301,6 +433,7 @@ class MemoryRepository:
             **data,
             "conteudo": sanitize_text(data["conteudo"]),
             "status": "ativa",
+            "indice_status": "pendente",
             "criada_em": now,
             "atualizada_em": now,
             "expira_em": now + timedelta(days=retention) if retention else None,
@@ -314,20 +447,31 @@ class MemoryRepository:
             }
         )
         if duplicate:
-            self._upsert_vector(context, duplicate)
+            try:
+                self._upsert_vector(context, duplicate)
+            except Exception:  # noqa: BLE001 - Mongo é a fonte de verdade
+                logger.exception("Não foi possível indexar memória existente no Qdrant.")
             return serialize(duplicate)
         self.memories.insert_one(document)
-        self._upsert_vector(context, document)
+        try:
+            self._upsert_vector(context, document)
+        except Exception:  # noqa: BLE001 - Mongo é a fonte de verdade
+            logger.exception("Não foi possível indexar memória no Qdrant.")
+        else:
+            document["indice_status"] = "sincronizado"
+            self.memories.update_one(
+                {"_id": document["_id"]}, {"$set": {"indice_status": "sincronizado"}}
+            )
         return serialize(document)
 
     def _upsert_vector(self, context: RequestContext, document: dict[str, Any]) -> None:
         self.qdrant.upsert(
-            collection_name=self.collection_name,
+            collection_name=self.memories_collection_name,
             wait=True,
             points=[
                 models.PointStruct(
                     id=document["_id"],
-                    vector=models.Document(text=document["conteudo"], model=self.embedding_model),
+                    vector=gerar_embedding(document["conteudo"]),
                     payload={
                         "usuario_id": context.usuario_id,
                         "empresa_id": context.empresa_id,
@@ -352,8 +496,8 @@ class MemoryRepository:
     ) -> list[dict[str, Any]]:
         self.cleanup_expired(context)
         response = self.qdrant.query_points(
-            collection_name=self.collection_name,
-            query=models.Document(text=query, model=self.embedding_model),
+            collection_name=self.memories_collection_name,
+            query=gerar_embedding(query),
             query_filter=models.Filter(
                 must=[
                     models.FieldCondition(
@@ -388,7 +532,7 @@ class MemoryRepository:
         )
         if result.matched_count:
             self.qdrant.delete(
-                collection_name=self.collection_name,
+                collection_name=self.memories_collection_name,
                 points_selector=models.PointIdsList(points=[memory_id]),
                 wait=True,
             )

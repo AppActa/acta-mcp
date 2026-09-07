@@ -60,13 +60,28 @@ def register_memory_tools(mcp: FastMCP, container: Container) -> None:
         )
 
     @mcp.tool(name="memoria_material_resumo", structured_output=True)
-    def material_resumo(session_id: str) -> dict[str, Any]:
+    def material_resumo(session_id: str, forcar: bool = False) -> dict[str, Any]:
         """Retorna apenas mensagens ainda não consolidadas e indica quando resumir."""
         context = get_request_context()
         return execute(
             "memoria_material_resumo",
-            lambda: service.material_resumo(context, session_id=session_id),
+            lambda: service.material_resumo(context, session_id=session_id, forcar=forcar),
         )
+
+    @mcp.tool(name="memoria_encerrar_sessao", structured_output=True)
+    def encerrar_sessao(session_id: str) -> dict[str, Any]:
+        """Encerra uma conversa apenas se ela possuir mensagens persistidas."""
+        context = get_request_context()
+        return execute(
+            "memoria_encerrar_sessao",
+            lambda: service.encerrar_sessao(context, session_id=session_id),
+        )
+
+    @mcp.tool(name="memoria_listar_chats", structured_output=True)
+    def listar_chats(limit: int = 50) -> dict[str, Any]:
+        """Lista conversas não vazias do usuário autenticado."""
+        context = get_request_context()
+        return execute("memoria_listar_chats", lambda: service.listar_chats(context, limit=limit))
 
     @mcp.tool(name="memoria_atualizar_resumo", structured_output=True)
     def atualizar_resumo(session_id: str, resumo: str, resumido_ate: datetime) -> dict[str, Any]:

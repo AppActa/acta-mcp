@@ -4,7 +4,6 @@ from acta_mcp.container import Container
 from acta_mcp.modules.ciclos.tools import register_ciclo_tools
 from acta_mcp.modules.colaboradores.tools import register_colaborador_tools
 from acta_mcp.modules.formularios.tools import register_formulario_tools
-from acta_mcp.modules.licoes_aprendidas.tools import register_licoes_aprendidas_tools
 from acta_mcp.modules.memoria.tools import register_memory_tools
 from acta_mcp.modules.predicoes.tools import register_predicao_tools
 from acta_mcp.modules.rag.tools import register_rag_tools
@@ -26,7 +25,6 @@ def register_all(mcp: FastMCP, container: Container) -> None:
     register_predicao_tools(mcp, container)
     register_rag_tools(mcp, container)
     register_skill_tools(mcp, container)
-    register_licoes_aprendidas_tools(mcp, container)
     register_treinamento_tools(mcp, container)
     register_resources(mcp, container)
     register_prompts(mcp)

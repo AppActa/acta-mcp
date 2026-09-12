@@ -14,7 +14,6 @@ do `RequestContext` autenticado e nunca de parâmetros decididos pelo modelo.
 | RAG | `faq_retriever`, busca semântica no catálogo `ACTA_DOCS`. |
 | Memória | sessões, mensagens, resumo, busca, consentimento e chats. Veja [Memória](memory.md). |
 | Skills | criação, consulta, listagem e exclusão de instruções privadas de apresentação. |
-| Lições aprendidas | registro autorizado. |
 | Treinamentos | criação autorizada com participantes. |
 
 ## Regras comuns

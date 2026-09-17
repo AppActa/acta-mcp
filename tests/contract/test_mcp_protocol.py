@@ -116,11 +116,6 @@ TOOL_ARGUMENTS = {
     "skills_obter": {"nome": "resumo-contratual"},
     "skills_listar": {},
     "skills_excluir": {"nome": "resumo-contratual"},
-    "licoes_aprendidas_registrar": {
-        "id_ciclo": 1,
-        "titulo": "Lição do contrato",
-        "licao": "Validar mutações com isolamento por empresa.",
-    },
     "treinamentos_criar": {
         "id_ciclo": 1,
         "id_responsavel": 1,
@@ -178,7 +173,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 65
+            assert len(expected) == 64
 
             response = await session.call_tool(
                 "tarefas_atrasadas",

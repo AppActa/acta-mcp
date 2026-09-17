@@ -73,6 +73,5 @@ TOOL_CATALOG = {
     ],
     "rag": ["faq_retriever"],
     "skills": ["skills_criar", "skills_obter", "skills_listar", "skills_excluir"],
-    "licoes_aprendidas": ["licoes_aprendidas_registrar"],
     "treinamentos": ["treinamentos_criar"],
 }

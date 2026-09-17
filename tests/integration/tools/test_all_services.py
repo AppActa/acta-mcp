@@ -304,14 +304,6 @@ def test_all_creation_operations(container, context) -> None:
     )
 
     assert_ok(
-        container.licoes_aprendidas.registrar(
-            admin,
-            id_ciclo=1,
-            titulo="Lição de integração",
-            licao="Mutações precisam de autorização centralizada.",
-        )
-    )
-    assert_ok(
         container.treinamentos.criar(
             admin,
             id_ciclo=1,

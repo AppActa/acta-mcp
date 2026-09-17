@@ -31,14 +31,14 @@ flowchart TD
 
 Em cada inicialização HTTP, o lifecycle abre o pool PostgreSQL, verifica MongoDB,
 valida/cria os índices de memória, sincroniza a documentação RAG e prepara os índices
-das skills e lições aprendidas. `GET /health` verifica PostgreSQL, MongoDB e Qdrant;
+das skills. `GET /health` verifica PostgreSQL, MongoDB e Qdrant;
 retorna `503` se algum deles estiver indisponível.
 
 ## Fontes de dados
 
 - **PostgreSQL:** entidades transacionais do ACTA, permissões, ciclos, tarefas,
   colaboradores, treinamentos e predições.
-- **MongoDB:** formulários, skills, lições aprendidas e fonte oficial das sessões,
+- **MongoDB:** formulários, skills e fonte oficial das sessões,
   mensagens, consentimentos e memórias do usuário.
 - **Qdrant:** índice vetorial da documentação FAQ e da memória. Não é fonte oficial
   de dados de memória.

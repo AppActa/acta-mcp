@@ -769,7 +769,7 @@ ACTA_DOCS = [
         "phase": "C",
         "audience": ["gestor"],
         "tags": ["problema não resolvido", "retorno", "desvio", "lições aprendidas"],
-        "related_agents": ["rag", "ciclo", "licoes_aprendidas"],
+        "related_agents": ["rag", "ciclo"],
         "content": (
             "Caso o problema não seja resolvido ou a causa raiz não seja bloqueada, o ACTA deve registrar o desvio e preservar os dados "
             "no histórico de lições aprendidas. O gestor pode retornar para etapas anteriores, como análise de fenômeno, Ishikawa, 5 Porquês "
@@ -845,7 +845,7 @@ ACTA_DOCS = [
         "phase": "A",
         "audience": ["gestor", "colaborador"],
         "tags": ["lições aprendidas", "histórico", "aprendizado", "act"],
-        "related_agents": ["rag", "licoes_aprendidas"],
+        "related_agents": ["rag"],
         "content": (
             "As lições aprendidas registram conhecimentos importantes obtidos durante o ciclo. Elas podem descrever o que funcionou, "
             "o que não funcionou, problemas que permaneceram, ações eficazes, causas recorrentes e recomendações para ciclos futuros. "
@@ -864,7 +864,7 @@ ACTA_DOCS = [
         "phase": "A",
         "audience": ["gestor"],
         "tags": ["histórico", "memória organizacional", "lições", "ciclos anteriores"],
-        "related_agents": ["rag", "licoes_aprendidas"],
+        "related_agents": ["rag"],
         "content": (
             "O histórico de lições aprendidas funciona como uma memória organizacional. Ele permite consultar problemas anteriores, "
             "causas recorrentes, ações eficazes, soluções já utilizadas e recomendações para novos ciclos. Essa base ajuda a empresa "
@@ -923,7 +923,7 @@ ACTA_DOCS = [
         "phase": None,
         "audience": ["gestor"],
         "tags": ["ia", "sugestões", "insights", "automação"],
-        "related_agents": ["rag", "ciclo", "indicadores", "licoes_aprendidas", "relatorios"],
+        "related_agents": ["rag", "ciclo", "indicadores", "relatorios"],
         "content": (
             "A inteligência artificial no ACTA apoia diversas etapas do ciclo. Ela pode sugerir problemas, causas raiz, ações corretivas, "
             "priorizações, padrões recorrentes, riscos, melhorias e lições aprendidas. As sugestões da IA devem ser revisadas pelo gestor."
@@ -941,7 +941,7 @@ ACTA_DOCS = [
         "phase": "C",
         "audience": ["gestor"],
         "tags": ["ia", "padrões", "recorrência", "indicadores", "check"],
-        "related_agents": ["indicadores", "licoes_aprendidas"],
+        "related_agents": ["indicadores"],
         "content": (
             "A IA pode apoiar a identificação de padrões recorrentes nos dados do ciclo, como causas mais comuns, ações mais eficazes, "
             "metas mais atingidas, setores com maior incidência de problemas e justificativas frequentes. Essa análise ajuda o gestor "
@@ -1377,25 +1377,25 @@ PERGUNTAS_TESTE = [
     {
         "id": 55,
         "message": "Esse problema já aconteceu antes?",
-        "expected_agent": "licoes_aprendidas",
+        "expected_agent": "rag",
         "difficulty": "hard",
     },
     {
         "id": 56,
         "message": "Quais lições aprendidas se parecem com este problema?",
-        "expected_agent": "licoes_aprendidas",
+        "expected_agent": "rag",
         "difficulty": "hard",
     },
     {
         "id": 57,
         "message": "Quais ações funcionaram em ciclos anteriores?",
-        "expected_agent": "licoes_aprendidas",
+        "expected_agent": "rag",
         "difficulty": "hard",
     },
     {
         "id": 58,
         "message": "Existe alguma solução anterior que podemos reutilizar?",
-        "expected_agent": "licoes_aprendidas",
+        "expected_agent": "rag",
         "difficulty": "hard",
     },
     # Agente de Relatórios
@@ -1498,12 +1498,6 @@ INTENT_ROUTING_EXAMPLES = {
         "Qual foi a variação percentual?",
         "Compare antes e depois.",
         "Quais indicadores pioraram?",
-    ],
-    "licoes_aprendidas": [
-        "Esse problema já aconteceu antes?",
-        "Quais lições aprendidas se aplicam?",
-        "Quais ações funcionaram em ciclos anteriores?",
-        "Existe solução anterior parecida?",
     ],
     "relatorios": [
         "Gere um resumo executivo.",

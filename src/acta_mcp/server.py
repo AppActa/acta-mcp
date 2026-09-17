@@ -23,8 +23,6 @@ from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
 from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
-from acta_mcp.modules.licoes_aprendidas.repository import LicoesAprendidasRepository
-from acta_mcp.modules.licoes_aprendidas.service import LicoesAprendidasService
 from acta_mcp.modules.memoria.repository import MemoryRepository
 from acta_mcp.modules.memoria.service import MemoryService
 from acta_mcp.modules.predicoes.repository import PredicoesRepository
@@ -95,9 +93,6 @@ def create_container(settings: Settings) -> Container:
         )
     )
     container.skills = SkillsService(SkillsRepository(mongo.database))
-    container.licoes_aprendidas = LicoesAprendidasService(
-        LicoesAprendidasRepository(mongo), access
-    )
     container.treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
     return container
 
@@ -162,7 +157,6 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.memoria.ensure_indexes()
         container.rag.ensure_index()
         container.skills.ensure_indexes()
-        container.licoes_aprendidas.ensure_indexes()
         try:
             async with mcp_lifespan(starlette_app):
                 yield

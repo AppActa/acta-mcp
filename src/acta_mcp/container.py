@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from psycopg_pool import ConnectionPool
 from pymongo import MongoClient
-from qdrant_client import QdrantClient
 
 from acta_mcp.core.config import Settings
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
@@ -16,7 +15,7 @@ class Container:
     settings: Settings
     postgres_pool: ConnectionPool
     mongo_client: MongoClient
-    qdrant_client: QdrantClient
+    qdrant_client: object | None
     postgres: PostgresRepository
     mongo: MongoRepository
     access: AccessService
@@ -27,12 +26,12 @@ class Container:
     formularios: object | None = None
     relatorios: object | None = None
     predicoes: object | None = None
-    memoria: object | None = None
-    rag: object | None = None
-    skills: object | None = None
     treinamentos: object | None = None
+    licoes: object | None = None
+    faq: object | None = None
 
     def close(self) -> None:
         self.postgres_pool.close()
         self.mongo_client.close()
-        self.qdrant_client.close()
+        if self.qdrant_client is not None:
+            self.qdrant_client.close()

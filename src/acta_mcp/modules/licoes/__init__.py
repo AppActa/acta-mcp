@@ -1,0 +1,1 @@
+"""Domínio de lições aprendidas."""

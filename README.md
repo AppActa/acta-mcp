@@ -1,8 +1,8 @@
 # ACTA MCP
 
-Servidor MCP modular que centraliza acesso autorizado aos dados do ACTA, à memória
-persistente e à base documental. O `acta-ai` usa este serviço por Streamable HTTP;
-ele não acessa PostgreSQL, MongoDB ou Qdrant diretamente.
+Servidor MCP modular que centraliza acesso autorizado aos dados do ACTA, às lições
+aprendidas e à base documental FAQ. Memória e skills pessoais ficam no sistema
+principal `acta-ai`.
 
 ```text
 ACTA AI → Streamable HTTP /mcp → Serviços de domínio → PostgreSQL / MongoDB / Qdrant
@@ -13,13 +13,13 @@ ACTA AI → Streamable HTTP /mcp → Serviços de domínio → PostgreSQL / Mong
 - [Arquitetura e ciclo de requisição](docs/architecture.md)
 - [Autenticação e autorização](docs/authentication.md)
 - [Catálogo de tools](docs/tools.md)
-- [Memória, collections e busca semântica](docs/memory.md)
 - [Configuração local e variáveis](docs/configuration.md)
 - [Deploy](docs/deployment.md)
 
 ## Execução local
 
-Pré-requisitos: Docker Desktop, Python 3.11+ e credenciais Qdrant e Gemini válidas.
+Pré-requisitos: Docker Desktop, Python 3.11+. Qdrant e Gemini são opcionais para a busca FAQ;
+sem Qdrant, o MCP procura lexicalmente na documentação local.
 
 ```powershell
 Copy-Item .env.example .env
@@ -59,4 +59,5 @@ docker compose up -d --wait
 .\.venv\Scripts\ruff.exe check src tests
 ```
 
-Os testes de integração requerem PostgreSQL, MongoDB, Qdrant e Gemini configurados.
+Os testes de integração requerem PostgreSQL e MongoDB; a busca FAQ é testada com o fallback
+local, e o caminho Qdrant usa clientes simulados.

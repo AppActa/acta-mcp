@@ -18,11 +18,21 @@ services:
         sync: false
       - key: MONGODB_DATABASE
         value: acta
-      - key: QDRANT_API_KEY
-        sync: false
       - key: QDRANT_CLUSTER_ENDPOINT
         sync: false
-      - key: QDRANT_COLLECTION_NAME
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_FAQ_COLLECTION
         value: acta_faq
+      - key: QDRANT_TIMEOUT_SECONDS
+        value: "10"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
       - key: ACTA_LOG_LEVEL
         value: INFO

@@ -24,30 +24,29 @@ flowchart TD
     C --> D[Cria RequestContext]
     D --> E[Tool MCP e schema]
     E --> F[Service de domínio]
-    F --> G[Repositório PostgreSQL, MongoDB ou Qdrant]
+    F --> G[Repositório PostgreSQL ou MongoDB]
     G --> H[Resposta estruturada]
     H --> I[Auditoria e trace_id]
 ```
 
-Em cada inicialização HTTP, o lifecycle abre o pool PostgreSQL, verifica MongoDB,
-valida/cria os índices de memória, sincroniza a documentação RAG e prepara os índices
-das skills. `GET /health` verifica PostgreSQL, MongoDB e Qdrant;
-retorna `503` se algum deles estiver indisponível.
+Em cada inicialização HTTP, o lifecycle abre o pool PostgreSQL e verifica MongoDB.
+`GET /health` verifica PostgreSQL e MongoDB; retorna `503` se algum deles estiver
+indisponível. O FAQ usa o índice Qdrant quando configurado e mantém busca lexical
+na documentação local como fallback.
 
 ## Fontes de dados
 
 - **PostgreSQL:** entidades transacionais do ACTA, permissões, ciclos, tarefas,
   colaboradores, treinamentos e predições.
-- **MongoDB:** formulários, skills e fonte oficial das sessões,
-  mensagens, consentimentos e memórias do usuário.
-- **Qdrant:** índice vetorial da documentação FAQ e da memória. Não é fonte oficial
-  de dados de memória.
+- **MongoDB:** formulários e documentos dos domínios operacionais do MCP.
+- **Qdrant:** índice vetorial opcional para a documentação consultada pelo FAQ MCP.
 
 ## Isolamento e autorização
 
 O `RequestContext` contém `usuario_id`, `empresa_id`, permissões e `trace_id`.
 Services e repositories aplicam esses valores nas consultas. Em especial, a memória
 filtra simultaneamente usuário e empresa em MongoDB e Qdrant. O cliente não escolhe
-o nível de acesso; ele é derivado de `usuario_sistema.tipo_usuario`.
+o nível de acesso; ele é derivado de `usuario_sistema.tipo_usuario`. O FAQ consulta
+apenas documentos conceituais publicados, sem acesso aos dados privados dos ciclos.
 
 Consulte [Autenticação](authentication.md) para os níveis e cabeçalhos exigidos.

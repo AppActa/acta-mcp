@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import Literal
 
 from dotenv import load_dotenv
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
@@ -52,29 +52,14 @@ class Settings(BaseSettings):
     mongodb_database: str = "acta"
     acta_mongo_timeout_ms: int = Field(default=5000, ge=100)
 
-    qdrant_api_key: str | None = None
     gemini_api_key: str | None = None
     qdrant_cluster_endpoint: str | None = None
-    qdrant_collection_name: str = "acta_faq"
-    qdrant_memory_messages_collection_name: str = "memoria_mensagens"
-    qdrant_memory_collection_name: str = "memoria_usuario"
-    qdrant_embedding_model: Literal["gemini-embedding-2-preview"] = "gemini-embedding-2-preview"
-    qdrant_vector_size: int = Field(default=768, ge=1)
-    qdrant_memory_vector_size: int = Field(default=768, ge=1)
-    qdrant_timeout_seconds: float = Field(default=15, gt=0)
-
-    acta_memory_message_retention_days: int = Field(default=90, ge=1)
-    acta_memory_inferred_retention_days: int = Field(default=90, ge=1)
-    acta_memory_summary_every_messages: int = Field(default=10, ge=2)
-    acta_memory_recent_messages: int = Field(default=8, ge=1, le=50)
-
-    @field_validator("qdrant_vector_size", "qdrant_memory_vector_size")
-    @classmethod
-    def validate_gemini_vector_size(_cls, value: int) -> int:
-        if value != 768:
-            raise ValueError("As collections Qdrant do ACTA usam vetores de 768 dimensões.")
-        return value
-
+    qdrant_api_key: str | None = None
+    qdrant_faq_collection: str = "acta_faq"
+    qdrant_timeout_seconds: float = Field(default=10, gt=0)
+    cloudinary_cloud_name: str | None = None
+    cloudinary_api_key: str | None = None
+    cloudinary_api_secret: str | None = None
     @model_validator(mode="after")
     def validate_security(self) -> "Settings":
         if self.acta_env == "production" and self.acta_auth_mode == "disabled":
@@ -83,10 +68,6 @@ class Settings(BaseSettings):
             raise ValueError("ACTA_MCP_API_KEY é obrigatório quando ACTA_AUTH_MODE=api_key.")
         if self.acta_postgres_pool_max_size < self.acta_postgres_pool_min_size:
             raise ValueError("O tamanho máximo do pool deve ser maior ou igual ao mínimo.")
-        if self.acta_env == "production" and not self.qdrant_cluster_endpoint:
-            raise ValueError("QDRANT_CLUSTER_ENDPOINT é obrigatório em produção.")
-        if self.acta_env == "production" and not self.qdrant_api_key:
-            raise ValueError("QDRANT_API_KEY é obrigatório em produção.")
         if self.acta_env == "production" and not self.gemini_api_key:
             raise ValueError("GEMINI_API_KEY é obrigatório em produção.")
         return self

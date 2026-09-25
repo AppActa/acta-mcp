@@ -11,10 +11,9 @@ do `RequestContext` autenticado e nunca de parâmetros decididos pelo modelo.
 | Formulários | listagem, respostas, resumo, rascunho, perguntas e publicação. |
 | Relatórios | contexto consolidado de um ciclo para geração pelo ACTA AI. |
 | Predições | riscos, estimativas, sobrecarga, metas, anomalias e recorrência com amostra mínima. |
-| RAG | `faq_retriever`, busca semântica no catálogo `ACTA_DOCS`. |
-| Memória | sessões, mensagens, resumo, busca, consentimento e chats. Veja [Memória](memory.md). |
-| Skills | criação, consulta, listagem e exclusão de instruções privadas de apresentação. |
 | Treinamentos | criação autorizada com participantes. |
+| Lições aprendidas | criação baseada em evidências do ciclo com PDF/anexo, resumo e perguntas com referências. |
+| FAQ | `faq_retriever` busca a documentação conceitual ACTA/PDCA com Qdrant semântico ou busca lexical local. |
 
 ## Regras comuns
 
@@ -23,7 +22,7 @@ do `RequestContext` autenticado e nunca de parâmetros decididos pelo modelo.
 - Não existem tools de SQL livre ou consulta MongoDB arbitrária.
 - Predições retornam indisponibilidade quando não há dados ou variação suficientes;
   não inventam probabilidades.
-- O RAG e a memória usam embeddings Gemini de 768 dimensões, mas em collections
-  distintas: `acta_faq`, `memoria_mensagens` e `memoria_usuario` por padrão.
+- Memória de conversas e skills personalizadas são capacidades nativas do ACTA AI;
+  não aparecem como tools MCP.
 
 O resource `acta://catalog/tools` contém a descrição estruturada das tools disponíveis.

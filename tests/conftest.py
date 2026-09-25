@@ -9,12 +9,6 @@ from acta_mcp.server import create_container
 
 @pytest.fixture(scope="session")
 def integration_settings() -> Settings:
-    qdrant_overrides = {}
-    if api_key := env_str("TEST_QDRANT_API_KEY"):
-        qdrant_overrides["qdrant_api_key"] = api_key
-    if endpoint := env_str("TEST_QDRANT_CLUSTER_ENDPOINT"):
-        qdrant_overrides["qdrant_cluster_endpoint"] = endpoint
-
     return Settings(
         acta_env="test",
         acta_auth_mode="disabled",
@@ -24,14 +18,6 @@ def integration_settings() -> Settings:
         ),
         mongodb_uri=env_str("TEST_MONGODB_URI", "mongodb://localhost:27018"),
         mongodb_database="acta",
-        qdrant_embedding_model="gemini-embedding-2-preview",
-        qdrant_vector_size=768,
-        qdrant_memory_vector_size=768,
-        qdrant_collection_name=env_str(
-            "TEST_QDRANT_COLLECTION_NAME",
-            "acta_faq_test_768",
-        ),
-        **qdrant_overrides,
     )
 
 

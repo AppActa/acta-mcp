@@ -1,0 +1,29 @@
+name: ACTA MCP CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      TEST_DATABASE_URL: postgresql://acta:acta@localhost:5433/acta
+      TEST_MONGODB_URI: mongodb://localhost:27018
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - run: docker compose up -d --wait postgres mongodb
+      - run: uv sync --frozen --extra dev
+      - run: uv run ruff check src tests
+      - run: uv run pytest -q
+
+      - if: always()
+        run: docker compose down -v

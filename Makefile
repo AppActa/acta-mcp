@@ -15,5 +15,5 @@ validate:
 	$(COMPOSE) up -d --wait postgres mongodb
 	$(UV) run ruff check src tests
 	$(UV) run pytest -q --cov=acta_mcp --cov-report=term-missing --cov-fail-under=$(COVERAGE_MIN)
-	@echo VALIDATE APROVADO: Ruff 100% sem findings; testes aprovados; cobertura >= $(COVERAGE_MIN)%.
+	@echo "VALIDATE APROVADO: Ruff sem findings; testes aprovados; cobertura >= $(COVERAGE_MIN)%"
 

@@ -149,6 +149,21 @@ CREATE TABLE pdca.treinamento (
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE pdca.anexo (
+    id BIGSERIAL PRIMARY KEY,
+    id_empresa BIGINT NOT NULL REFERENCES empresa(id),
+    id_ciclo BIGINT REFERENCES pdca.ciclo(id),
+    id_origem BIGINT NOT NULL,
+    nome_arquivo TEXT NOT NULL,
+    tipo_arquivo TEXT NOT NULL,
+    tamanho_arquivo BIGINT NOT NULL,
+    bucket_arquivo TEXT,
+    caminho_arquivo TEXT NOT NULL,
+    status TEXT NOT NULL,
+    categoria TEXT NOT NULL,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE pdca.usuario_treinamento (
     id_treinamento BIGINT NOT NULL REFERENCES pdca.treinamento(id),
     id_usuario BIGINT NOT NULL REFERENCES usuario_sistema(id),

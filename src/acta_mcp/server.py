@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
+from qdrant_client import QdrantClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
@@ -15,23 +16,20 @@ from acta_mcp.infrastructure.observability.audit import AuditLogger
 from acta_mcp.infrastructure.observability.otel import instrument_asgi_app
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 from acta_mcp.infrastructure.postgres.connection import create_postgres_pool
-from acta_mcp.infrastructure.qdrant.connection import create_qdrant_client
 from acta_mcp.modules.ciclos.repository import CiclosRepository
 from acta_mcp.modules.ciclos.service import CiclosService
 from acta_mcp.modules.colaboradores.repository import ColaboradoresRepository
 from acta_mcp.modules.colaboradores.service import ColaboradoresService
 from acta_mcp.modules.common import AccessService
+from acta_mcp.modules.faq.repository import FaqRepository
+from acta_mcp.modules.faq.service import FaqService
 from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
-from acta_mcp.modules.memoria.repository import MemoryRepository
-from acta_mcp.modules.memoria.service import MemoryService
+from acta_mcp.modules.licoes.repository import LicoesRepository
+from acta_mcp.modules.licoes.service import LicoesService
 from acta_mcp.modules.predicoes.repository import PredicoesRepository
 from acta_mcp.modules.predicoes.service import PredicoesService
-from acta_mcp.modules.rag.repository import FaqRepository
-from acta_mcp.modules.rag.service import RagService
 from acta_mcp.modules.relatorios.service import RelatoriosService
-from acta_mcp.modules.skills.repository import SkillsRepository
-from acta_mcp.modules.skills.service import SkillsService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
 from acta_mcp.modules.tarefas.service import TarefasService
 from acta_mcp.modules.treinamentos.repository import TreinamentosRepository
@@ -42,7 +40,14 @@ from acta_mcp.registry import register_all
 def create_container(settings: Settings) -> Container:
     postgres_pool = create_postgres_pool(settings)
     mongo_client = create_mongo_client(settings)
-    qdrant_client = create_qdrant_client(settings)
+    qdrant_client = None
+    if settings.qdrant_cluster_endpoint and settings.qdrant_api_key:
+        qdrant_client = QdrantClient(
+            url=settings.qdrant_cluster_endpoint,
+            api_key=settings.qdrant_api_key,
+            timeout=settings.qdrant_timeout_seconds,
+            cloud_inference=False,
+        )
     postgres = PostgresRepository(postgres_pool)
     mongo = MongoRepository(mongo_client[settings.mongodb_database])
     access = AccessService(postgres)
@@ -63,19 +68,6 @@ def create_container(settings: Settings) -> Container:
         access,
     )
     container.formularios = FormulariosService(FormulariosRepository(mongo), access)
-    container.memoria = MemoryService(
-        MemoryRepository(
-            mongo.database,
-            qdrant_client,
-            messages_collection_name=settings.qdrant_memory_messages_collection_name,
-            memories_collection_name=settings.qdrant_memory_collection_name,
-            vector_size=settings.qdrant_memory_vector_size,
-            message_retention_days=settings.acta_memory_message_retention_days,
-            inferred_retention_days=settings.acta_memory_inferred_retention_days,
-        ),
-        recent_messages=settings.acta_memory_recent_messages,
-        summary_every_messages=settings.acta_memory_summary_every_messages,
-    )
     container.relatorios = RelatoriosService(
         access,
         container.ciclos,
@@ -84,16 +76,9 @@ def create_container(settings: Settings) -> Container:
         container.formularios,
     )
     container.predicoes = PredicoesService(PredicoesRepository(postgres, mongo), access)
-    container.rag = RagService(
-        FaqRepository(
-            qdrant_client,
-            collection_name=settings.qdrant_collection_name,
-            embedding_model=settings.qdrant_embedding_model,
-            vector_size=settings.qdrant_vector_size,
-        )
-    )
-    container.skills = SkillsService(SkillsRepository(mongo.database))
     container.treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
+    container.licoes = LicoesService(mongo, LicoesRepository(postgres_pool), access, settings)
+    container.faq = FaqService(FaqRepository(qdrant_client, settings))
     return container
 
 
@@ -131,10 +116,6 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
             checks["mongodb"] = container.mongo.ping()
         except Exception:
             checks["mongodb"] = False
-        try:
-            checks["qdrant"] = container.rag.ping()
-        except Exception:
-            checks["qdrant"] = False
         healthy = all(checks.values())
         return JSONResponse(
             {
@@ -154,9 +135,6 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         container.postgres_pool.open(wait=True)
         container.postgres.ping()
         container.mongo.ping()
-        container.memoria.ensure_indexes()
-        container.rag.ensure_index()
-        container.skills.ensure_indexes()
         try:
             async with mcp_lifespan(starlette_app):
                 yield

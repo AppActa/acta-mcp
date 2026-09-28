@@ -18,14 +18,14 @@ escolhê-lo. Cada nível inclui os anteriores:
 
 | Nível | Capacidades |
 | --- | --- |
-| `read` | Consultar dados autorizados e gerenciar as próprias skills. |
+| `read` | Consultar dados autorizados e pesquisar a documentação FAQ. |
 | `create` | Ler, criar e atualizar dados operacionais. |
 | `geral` | Ler, criar, atualizar e excluir; também libera formulários, treinamentos e o contexto consolidado de relatórios. |
 | `admin` | Visão administrativa da empresa, sempre limitada ao `empresa_id` autenticado. |
 
 O mapeamento persistido é `COLABORADOR → read`, `GESTOR → create` e `ADMIN → admin`.
 O nível `geral` permanece na hierarquia das tools, portanto atualmente só é alcançado
-por `ADMIN`. Skills continuam privadas ao proprietário mesmo para um administrador.
+por `ADMIN`. Skills pessoais são gerenciadas pelo ACTA AI, fora do catálogo MCP.
 
 As tools `relatorios_contexto_ciclo`, `predicoes_respostas_atipicas` e
 `predicoes_tema_formulario` também exigem `geral`, pois expõem ou processam

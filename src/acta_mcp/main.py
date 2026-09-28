@@ -27,7 +27,6 @@ def main() -> None:
             parser.error("stdio requer ACTA_AUTH_MODE=disabled.")
         container.postgres_pool.open(wait=True)
         container.mongo.ping()
-        container.rag.ensure_index()
         token = set_request_context(
             build_context(
                 usuario_id=settings.acta_default_usuario_id,

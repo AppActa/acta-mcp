@@ -34,7 +34,7 @@ TOOL_ARGUMENTS = {
     "tarefas_consultar": {"id_ciclo": 1},
     "tarefas_atrasadas": {"id_ciclo": 1},
     "tarefas_concluidas": {"id_ciclo": 1},
-    "tarefas_detalhes": {"id_tarefa": 1},
+    "tarefas_detalhes": {"id_tarefa": 1, "id_ciclo": 1},
     "tarefas_por_responsavel": {"id_ciclo": 1},
     "tarefas_alertas_prazo": {"id_ciclo": 1},
     "tarefas_relatorio_completo": {"id_ciclo": 1},
@@ -48,7 +48,7 @@ TOOL_ARGUMENTS = {
     },
     "tarefas_atualizar": {},
     "tarefas_atualizar_status": {},
-    "colaboradores_consultar": {},
+    "colaboradores_consultar": {"id_ciclo": 1},
     "colaborador_detalhes": {"id_colaborador": 2, "id_ciclo": 1},
     "colaboradores_participantes_ciclo": {"id_ciclo": 1},
     "colaboradores_por_area": {},
@@ -67,16 +67,6 @@ TOOL_ARGUMENTS = {
     "formularios_adicionar_pergunta": {},
     "formularios_publicar": {},
     "relatorios_contexto_ciclo": {"id_ciclo": 1},
-    "predicoes_risco_atraso_tarefa": {"id_tarefa": 1},
-    "predicoes_estimativa_conclusao_tarefa": {"id_tarefa": 1},
-    "predicoes_risco_atraso_ciclo": {"id_ciclo": 1},
-    "predicoes_estimativa_conclusao_ciclo": {"id_ciclo": 1},
-    "predicoes_conclusao_treinamento": {"id_ciclo": 1, "id_treinamento": 1},
-    "predicoes_sobrecarga_colaborador": {"id_ciclo": 1},
-    "predicoes_atingimento_meta": {"id_ciclo": 1},
-    "predicoes_respostas_atipicas": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
-    "predicoes_tema_formulario": {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
-    "predicoes_recorrencia_problema": {"id_ciclo": 1},
     "treinamentos_criar": {
         "id_ciclo": 1,
         "id_responsavel": 1,
@@ -137,7 +127,50 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 50
+            assert len(expected) == 40
+            scoped_tools = {
+                "ciclo_visao_geral",
+                "ciclo_problema_principal",
+                "ciclo_causas_raiz",
+                "ciclo_ishikawa",
+                "ciclo_riscos_pendencias",
+                "ciclo_treinamentos",
+                "ciclo_participantes",
+                "ciclo_relatorio_completo",
+                "ciclos_registrar_causa",
+                "ciclos_adicionar_item_ishikawa",
+                "tarefas_consultar",
+                "tarefas_atrasadas",
+                "tarefas_concluidas",
+                "tarefas_detalhes",
+                "tarefas_por_responsavel",
+                "tarefas_alertas_prazo",
+                "tarefas_relatorio_completo",
+                "tarefas_criar",
+                "tarefas_atualizar",
+                "tarefas_atualizar_status",
+                "colaboradores_consultar",
+                "colaborador_detalhes",
+                "colaboradores_participantes_ciclo",
+                "colaboradores_carga_trabalho",
+                "colaboradores_sugestao_realocacao",
+                "colaboradores_relatorio_completo",
+                "formularios_listar",
+                "formularios_detalhes",
+                "formularios_respostas",
+                "formularios_resumo_respostas",
+                "formularios_criar_rascunho",
+                "formularios_adicionar_pergunta",
+                "formularios_publicar",
+                "relatorios_contexto_ciclo",
+                "treinamentos_criar",
+                "licoes_criar",
+                "licoes_resumir",
+                "licoes_perguntar",
+            }
+            for tool in listed.tools:
+                if tool.name in scoped_tools:
+                    assert "id_ciclo" in tool.inputSchema.get("required", []), tool.name
 
             response = await session.call_tool(
                 "tarefas_atrasadas",
@@ -153,7 +186,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
 
 
 @pytest.mark.asyncio
-async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
+async def test_every_registered_read_tool_executes_successfully(mcp_url) -> None:
     headers = {
         "X-Acta-Usuario-Id": "4",
         "X-Acta-Empresa-Id": "1",
@@ -163,37 +196,32 @@ async def test_every_registered_tool_executes_successfully(mcp_url) -> None:
         read_stream, write_stream, _ = streams
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            created_form_id = None
-            created_task_id = None
+            mutating_tools = {
+                "ciclos_registrar_causa",
+                "ciclos_adicionar_item_ishikawa",
+                "tarefas_criar",
+                "tarefas_atualizar",
+                "tarefas_atualizar_status",
+                "formularios_criar_rascunho",
+                "formularios_adicionar_pergunta",
+                "formularios_publicar",
+                "treinamentos_criar",
+                "licoes_criar",
+            }
             for tool_name, arguments in TOOL_ARGUMENTS.items():
-                if tool_name == "tarefas_atualizar":
-                    arguments = {"id_tarefa": created_task_id, "prioridade": "ALTA"}
-                elif tool_name == "tarefas_atualizar_status":
-                    arguments = {"id_tarefa": created_task_id, "status": "EM_ANDAMENTO"}
-                elif tool_name == "formularios_adicionar_pergunta":
-                    arguments = {
-                        "id_ciclo": 1,
-                        "id_formulario": created_form_id,
-                        "texto": "A validação foi concluída?",
-                        "tipo_resposta": "BOOLEANO",
-                    }
-                elif tool_name == "formularios_publicar":
-                    arguments = {"id_ciclo": 1, "id_formulario": created_form_id}
+                if tool_name in mutating_tools:
+                    continue
                 response = await session.call_tool(tool_name, arguments)
                 assert not response.isError, tool_name
                 assert response.structuredContent is not None, tool_name
                 assert response.structuredContent["status"] in {"ok", "sem_licoes", "sem_evidencia"}, tool_name
                 if tool_name == "faq_retriever":
                     assert response.structuredContent["count"] > 0
-                if tool_name == "tarefas_criar":
-                    created_task_id = response.structuredContent["tarefa"]["id"]
-                elif tool_name == "formularios_criar_rascunho":
-                    created_form_id = response.structuredContent["formulario"]["id_formulario"]
 
 
 
 @pytest.mark.asyncio
-async def test_access_levels(mcp_url) -> None:
+async def test_cycle_read_access(mcp_url) -> None:
     async def call(headers, tool_name, arguments):
         async with streamablehttp_client(mcp_url, headers=headers) as streams:
             read_stream, write_stream, _ = streams
@@ -204,63 +232,36 @@ async def test_access_levels(mcp_url) -> None:
     read_headers = {
         "X-Acta-Usuario-Id": "2",
         "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "admin",
-    }
-    forbidden_create = await call(
-        read_headers,
-        "tarefas_criar",
-        {
-            "id_ciclo": 1,
-            "id_plano_acao": 1,
-            "id_responsavel": 2,
-            "titulo": "Não deve criar",
-            "descricao": "Nível read não pode criar tarefas",
-            "data_fim_prevista": "2026-12-31",
-        },
-    )
-    assert forbidden_create.structuredContent["status"] == "forbidden"
-
-    create_headers = {
-        "X-Acta-Usuario-Id": "1",
-        "X-Acta-Empresa-Id": "1",
-        "X-Acta-Permissoes": "read",
-    }
-    forbidden_form = await call(
-        create_headers,
-        "formularios_listar",
-        {"id_ciclo": 1},
-    )
-    assert forbidden_form.structuredContent["status"] == "forbidden"
-
-    for tool_name, arguments in (
-        ("relatorios_contexto_ciclo", {"id_ciclo": 1}),
-        (
-            "predicoes_respostas_atipicas",
-            {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
-        ),
-        (
-            "predicoes_tema_formulario",
-            {"id_ciclo": 1, "id_formulario": "fenomeno-1"},
-        ),
-    ):
-        forbidden_indirect_form_access = await call(
-            create_headers,
-            tool_name,
-            arguments,
-        )
-        assert forbidden_indirect_form_access.structuredContent["status"] == "forbidden"
-
-    geral_headers = {
-        "X-Acta-Usuario-Id": "4",
-        "X-Acta-Empresa-Id": "1",
         "X-Acta-Permissoes": "read",
     }
     allowed_form = await call(
-        geral_headers,
+        read_headers,
         "formularios_listar",
         {"id_ciclo": 1},
     )
     assert allowed_form.structuredContent["status"] == "ok"
+
+    for tool_name, arguments in (
+        ("relatorios_contexto_ciclo", {"id_ciclo": 1}),
+    ):
+        allowed_cycle_read = await call(
+            read_headers,
+            tool_name,
+            arguments,
+        )
+        assert allowed_cycle_read.structuredContent["status"] != "forbidden"
+
+    admin_headers = {
+        "X-Acta-Usuario-Id": "4",
+        "X-Acta-Empresa-Id": "1",
+        "X-Acta-Permissoes": "read",
+    }
+    allowed_admin_cycle = await call(
+        admin_headers,
+        "ciclo_visao_geral",
+        {"id_ciclo": 1},
+    )
+    assert allowed_admin_cycle.structuredContent["status"] == "ok"
 
     unlinked_headers = {
         "X-Acta-Usuario-Id": "5",

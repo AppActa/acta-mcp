@@ -18,8 +18,8 @@ def register_licoes_tools(mcp: FastMCP, container: Container) -> None:
                             operation=lambda: service.criar(context, id_ciclo=id_ciclo, contexto=contexto, expectativa=expectativa))
 
     @mcp.tool(name="licoes_resumir", structured_output=True)
-    def resumir(id_ciclo: int | None = None) -> dict[str, Any]:
-        """Resume lições aprendidas da empresa ou de um ciclo autorizado."""
+    def resumir(id_ciclo: int) -> dict[str, Any]:
+        """Resume lições aprendidas do ciclo autorizado."""
         context = get_request_context()
         return execute_tool(name="licoes_resumir", audit=audit,
                             operation=lambda: service.resumir(context, id_ciclo=id_ciclo))

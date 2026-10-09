@@ -131,7 +131,7 @@ class CiclosService:
 
     def registrar_causa(self, context: RequestContext, **data) -> dict:
         payload = CausaCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         self.access.ensure_problem(
             context,
             payload.id_problema,
@@ -156,7 +156,7 @@ class CiclosService:
 
     def adicionar_item_ishikawa(self, context: RequestContext, **data) -> dict:
         payload = IshikawaItemCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         now = datetime.now(UTC)
         document = self.mongo.database["ishikawa"].find_one_and_update(
             {

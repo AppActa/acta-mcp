@@ -10,10 +10,9 @@ from starlette.routing import Route
 from acta_mcp.container import Container
 from acta_mcp.core.auth import ActaAuthenticationMiddleware
 from acta_mcp.core.config import Settings
+from acta_mcp.infrastructure.audit import AuditLogger
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
 from acta_mcp.infrastructure.mongodb.connection import create_mongo_client
-from acta_mcp.infrastructure.observability.audit import AuditLogger
-from acta_mcp.infrastructure.observability.otel import instrument_asgi_app
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 from acta_mcp.infrastructure.postgres.connection import create_postgres_pool
 from acta_mcp.modules.ciclos.repository import CiclosRepository
@@ -27,8 +26,6 @@ from acta_mcp.modules.formularios.repository import FormulariosRepository
 from acta_mcp.modules.formularios.service import FormulariosService
 from acta_mcp.modules.licoes.repository import LicoesRepository
 from acta_mcp.modules.licoes.service import LicoesService
-from acta_mcp.modules.predicoes.repository import PredicoesRepository
-from acta_mcp.modules.predicoes.service import PredicoesService
 from acta_mcp.modules.relatorios.service import RelatoriosService
 from acta_mcp.modules.tarefas.repository import TarefasRepository
 from acta_mcp.modules.tarefas.service import TarefasService
@@ -75,7 +72,6 @@ def create_container(settings: Settings) -> Container:
         container.colaboradores,
         container.formularios,
     )
-    container.predicoes = PredicoesService(PredicoesRepository(postgres, mongo), access)
     container.treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
     container.licoes = LicoesService(mongo, LicoesRepository(postgres_pool), access, settings)
     container.faq = FaqService(FaqRepository(qdrant_client, settings))
@@ -147,7 +143,7 @@ def create_http_app(settings: Settings, mcp: FastMCP, container: Container):
         settings,
         context_resolver=container.access.resolve_request_context,
     )
-    return instrument_asgi_app(app)
+    return app
 
 
 def build_application(settings: Settings):

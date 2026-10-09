@@ -17,7 +17,7 @@
 
 Em produção, use `ACTA_AUTH_MODE=api_key` e configure uma chave forte em
 `ACTA_MCP_API_KEY`. O modo `disabled` é proibido quando `ACTA_ENV=production`.
-Mantenha `DATABASE_URL`, `MONGODB_URI`, Gemini e observabilidade fora
+Mantenha `DATABASE_URL`, `MONGODB_URI` e Gemini fora
 do controle de versão.
 
 ## Execução

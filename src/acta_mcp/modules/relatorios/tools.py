@@ -21,7 +21,6 @@ def register_relatorio_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="relatorios_contexto_ciclo",
             audit=audit,
-            minimum_access="geral",
             operation=lambda: service.contexto_ciclo(
                 context,
                 id_ciclo=id_ciclo,

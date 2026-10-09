@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from acta_mcp.core.context import get_request_context
 from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
 from acta_mcp.core.security import AccessLevel, require_access
-from acta_mcp.infrastructure.observability.audit import AuditLogger
+from acta_mcp.infrastructure.audit import AuditLogger
 
 logger = logging.getLogger(__name__)
 

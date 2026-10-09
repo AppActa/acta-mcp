@@ -11,7 +11,7 @@ tool um agente deve chamar.
 | --- | --- |
 | `core` | Configuração, contexto de requisição, autenticação, erros e execução auditada. |
 | `modules` | Schemas, services, repositories e tools por domínio. |
-| `infrastructure` | Clientes e adaptadores de PostgreSQL, MongoDB, Qdrant e observabilidade. |
+| `infrastructure` | Clientes e adaptadores de PostgreSQL, MongoDB, Qdrant e auditoria. |
 | `registry.py` | Registro único de tools, resources e prompts. |
 | `server.py` | Container, lifecycle ASGI, endpoint de saúde e transporte MCP. |
 
@@ -37,7 +37,7 @@ na documentação local como fallback.
 ## Fontes de dados
 
 - **PostgreSQL:** entidades transacionais do ACTA, permissões, ciclos, tarefas,
-  colaboradores, treinamentos e predições.
+  colaboradores e treinamentos.
 - **MongoDB:** formulários e documentos dos domínios operacionais do MCP.
 - **Qdrant:** índice vetorial opcional para a documentação consultada pelo FAQ MCP.
 

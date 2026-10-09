@@ -1,6 +1,7 @@
-import sys
+import inspect
 from types import SimpleNamespace
 
+import acta_mcp.modules.licoes.service as licoes_service
 from acta_mcp.core.context import RequestContext
 from acta_mcp.modules.licoes.repository import LicoesRepository
 from acta_mcp.modules.licoes.service import LicoesService
@@ -23,8 +24,14 @@ class Access:
     def __init__(self):
         self.checked = []
 
-    def ensure_cycle(self, context, cycle_id):
+    def ensure_cycle(self, context, cycle_id, *, operation="read"):
         self.checked.append((context.empresa_id, cycle_id))
+
+
+def test_lesson_summary_requires_cycle_argument():
+    parameter = inspect.signature(LicoesService.resumir).parameters["id_ciclo"]
+
+    assert parameter.default is inspect.Parameter.empty
 
 
 def make_service(records):
@@ -60,6 +67,16 @@ def test_question_without_lesson_evidence_returns_empty_status():
         "status": "sem_evidencia"
     }
     assert collection.query == {"id_empresa": 4, "id_ciclo": 9}
+
+
+def test_summary_reads_only_authorized_cycle_lessons():
+    service, collection, access, context = make_service([{"id_licao": 33, "licao": "evidência"}])
+
+    result = service.resumir(context, id_ciclo=9)
+
+    assert collection.query == {"id_empresa": 4, "id_ciclo": 9}
+    assert access.checked == [(4, 9)]
+    assert result["status"] == "ok"
 
 
 def test_repository_reads_dict_row_factory_results():
@@ -164,7 +181,8 @@ def test_create_generates_pdf_and_persists_lesson_and_attachment(monkeypatch):
             destroy=lambda *_args, **_kwargs: None,
         ),
     )
-    monkeypatch.setitem(sys.modules, "cloudinary", cloudinary)
+    monkeypatch.setattr(licoes_service, "cloudinary_config", cloudinary.config)
+    monkeypatch.setattr(licoes_service, "uploader", cloudinary.uploader)
 
     result = service.criar(context, id_ciclo=9, contexto="falha", expectativa="evitar recorrência")
 

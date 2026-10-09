@@ -13,7 +13,7 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
 
     @mcp.tool(name="colaboradores_consultar", structured_output=True)
     def colaboradores_consultar(
-        id_ciclo: int | None = None,
+        id_ciclo: int,
         nome: str | None = None,
         area: str | None = None,
         cargo: str | None = None,
@@ -43,7 +43,7 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
     @mcp.tool(name="colaborador_detalhes", structured_output=True)
     def colaborador_detalhes(
         id_colaborador: int,
-        id_ciclo: int | None = None,
+        id_ciclo: int,
     ) -> dict[str, Any]:
         """Consulta detalhes profissionais e alocações de um colaborador autorizado."""
         context = get_request_context()

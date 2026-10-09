@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ColaboradoresQuery(BaseModel):
-    id_ciclo: int | None = Field(default=None, gt=0)
+    id_ciclo: int = Field(gt=0)
     nome: str | None = None
     area: str | None = None
     cargo: str | None = None

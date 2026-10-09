@@ -24,7 +24,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_listar",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="read",
             operation=lambda: service.listar(
                 context,
                 id_ciclo=id_ciclo,
@@ -46,7 +46,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_detalhes",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="read",
             operation=lambda: service.detalhes(
                 context,
                 id_ciclo=id_ciclo,
@@ -66,7 +66,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_respostas",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="read",
             operation=lambda: service.respostas(
                 context,
                 id_ciclo=id_ciclo,
@@ -86,7 +86,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_resumo_respostas",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="read",
             operation=lambda: service.resumo_respostas(
                 context,
                 id_ciclo=id_ciclo,
@@ -102,12 +102,12 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         tipo: str,
         descricao: str | None = None,
     ) -> dict[str, Any]:
-        """Cria um formulário em rascunho; exige acesso geral."""
+        """Cria um formulário em rascunho no ciclo autorizado."""
         context = get_request_context()
         return execute_tool(
             name="formularios_criar_rascunho",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="create",
             operation=lambda: service.criar_rascunho(
                 context,
                 id_ciclo=id_ciclo,
@@ -133,7 +133,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_adicionar_pergunta",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="create",
             operation=lambda: service.adicionar_pergunta(
                 context,
                 id_ciclo=id_ciclo,
@@ -152,7 +152,7 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         return execute_tool(
             name="formularios_publicar",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="create",
             operation=lambda: service.publicar(
                 context,
                 id_ciclo=id_ciclo,

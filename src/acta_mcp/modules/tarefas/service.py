@@ -78,8 +78,8 @@ class TarefasService:
             limit=limit,
         )
 
-    def detalhes(self, context: RequestContext, id_tarefa: int) -> dict:
-        self.access.ensure_task(context, id_tarefa)
+    def detalhes(self, context: RequestContext, id_tarefa: int, id_ciclo: int) -> dict:
+        self.access.ensure_task(context, id_tarefa, id_ciclo)
         tarefa = self.repository.detalhes(id_tarefa, context.empresa_id)
         if tarefa is None:
             raise NotFoundError(f"Nenhuma tarefa encontrada com id {id_tarefa}.")
@@ -145,7 +145,7 @@ class TarefasService:
 
     def criar(self, context: RequestContext, **data) -> dict:
         payload = TarefaCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         plan = self.access.ensure_plan(context, payload.id_plano_acao)
         if plan["id_ciclo"] != payload.id_ciclo:
             raise AuthorizationError("O plano de ação não pertence ao ciclo informado.")
@@ -155,9 +155,9 @@ class TarefasService:
             raise RuntimeError("A tarefa não foi criada.")
         return {"status": "ok", "tarefa": tarefa}
 
-    def atualizar(self, context: RequestContext, **data) -> dict:
+    def atualizar(self, context: RequestContext, *, id_ciclo: int, **data) -> dict:
         payload = TarefaUpdate(**data)
-        self.access.ensure_task(context, payload.id_tarefa)
+        self.access.ensure_task(context, payload.id_tarefa, id_ciclo, operation="write")
         if payload.id_responsavel is not None:
             self.access.ensure_user(context, payload.id_responsavel)
         tarefa = self.repository.atualizar(payload)
@@ -165,9 +165,16 @@ class TarefasService:
             raise NotFoundError(f"Nenhuma tarefa encontrada com id {payload.id_tarefa}.")
         return {"status": "ok", "tarefa": tarefa}
 
-    def atualizar_status(self, context: RequestContext, *, id_tarefa: int, status: str) -> dict:
+    def atualizar_status(
+        self,
+        context: RequestContext,
+        *,
+        id_tarefa: int,
+        id_ciclo: int,
+        status: str,
+    ) -> dict:
         payload = TarefaStatusUpdate(id_tarefa=id_tarefa, status=status)
-        self.access.ensure_task(context, payload.id_tarefa)
+        self.access.ensure_task(context, payload.id_tarefa, id_ciclo, operation="write")
         tarefa = self.repository.atualizar_status(payload.id_tarefa, payload.status)
         if tarefa is None:
             raise NotFoundError(f"Nenhuma tarefa encontrada com id {payload.id_tarefa}.")

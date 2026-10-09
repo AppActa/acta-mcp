@@ -1,5 +1,6 @@
 TOOL_CATALOG = {
     "ciclos": [
+        "ciclos_buscar_por_descricao",
         "ciclo_visao_geral",
         "ciclo_problema_principal",
         "ciclo_causas_raiz",

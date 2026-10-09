@@ -51,6 +51,25 @@ class CiclosService:
             ),
         }
 
+    def buscar_por_descricao(
+        self,
+        context: RequestContext,
+        termo: str,
+        limit: int = 5,
+    ) -> dict:
+        normalized = termo.strip()
+        if len(normalized) > 120:
+            raise ValueError("O termo de busca deve ter no máximo 120 caracteres.")
+        safe_limit = max(1, min(limit, 10))
+        ciclos = self.repository.buscar_por_descricao(
+            usuario_id=context.usuario_id,
+            empresa_id=context.empresa_id,
+            tipo_usuario=context.tipo_usuario,
+            termo=normalized,
+            limit=safe_limit,
+        )
+        return {"status": "ok", "count": len(ciclos), "ciclos": ciclos}
+
     def problema_principal(self, context: RequestContext, id_ciclo: int) -> dict:
         self.access.ensure_cycle(context, id_ciclo)
         problema = self.repository.problema_principal(id_ciclo, context.empresa_id)

@@ -29,6 +29,21 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         "Consulta visão geral, contagens e status de um ciclo PDCA autorizado.",
         service.visao_geral,
     )
+
+    @mcp.tool(name="ciclos_buscar_por_descricao", structured_output=True)
+    def ciclos_buscar_por_descricao(termo: str, limit: int = 5) -> dict[str, Any]:
+        """Busca ciclos acessíveis pelo usuário por título ou trecho da descrição."""
+        context = get_request_context()
+        return execute_tool(
+            name="ciclos_buscar_por_descricao",
+            audit=audit,
+            operation=lambda: service.buscar_por_descricao(
+                context,
+                termo=termo,
+                limit=limit,
+            ),
+        )
+
     register(
         "ciclo_problema_principal",
         "Consulta o problema principal e sua causa raiz prioritária.",

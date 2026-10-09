@@ -6,7 +6,7 @@ modelo.
 
 | Domínio | Operações |
 | --- | --- |
-| Ciclos | Consultas de visão geral, problemas, Ishikawa, riscos, participantes e treinamentos; registro de causas e itens. |
+| Ciclos | Busca de ciclos acessíveis por título ou descrição; consultas de visão geral, problemas, Ishikawa, riscos, participantes e treinamentos; registro de causas e itens. |
 | Tarefas | Consultas, atrasos, detalhes, responsáveis, alertas, relatórios, criação e edição. |
 | Colaboradores | Consultas e detalhes vinculados ao ciclo, participação, carga e sugestão de realocação; `colaboradores_por_area` é empresarial. |
 | Formulários | Leitura de formulários e respostas, criação de rascunhos, perguntas e publicação. |
@@ -17,8 +17,10 @@ modelo.
 
 ## Escopo e autorização
 
-- Cada tool que lê ou altera dados de ciclo recebe um `id_ciclo` inteiro obrigatório e
-  confirma esse ciclo no PostgreSQL antes de acessar seus dados.
+- `ciclos_buscar_por_descricao` pesquisa título e descrição somente nos ciclos aos quais
+  o usuário autenticado tem acesso; ela retorna metadados para ajudar a identificar o ciclo.
+- Cada tool que lê ou altera dados de um ciclo específico recebe um `id_ciclo` inteiro
+  obrigatório e confirma esse ciclo no PostgreSQL antes de acessar seus dados.
 - As tools de tarefa por `id_tarefa` também recebem o `id_ciclo`; a tarefa deve pertencer
   exatamente ao ciclo informado.
 - Consultas de colaboradores, detalhes e resumo de lições não aceitam ciclo ausente e

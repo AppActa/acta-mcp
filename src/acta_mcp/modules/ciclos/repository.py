@@ -42,6 +42,38 @@ class CiclosRepository:
             (id_ciclo, empresa_id),
         )
 
+    def buscar_por_descricao(
+        self,
+        *,
+        usuario_id: int,
+        empresa_id: int,
+        tipo_usuario: str | None,
+        termo: str,
+        limit: int,
+    ) -> list[dict]:
+        pattern = f"%{termo.strip()}%"
+        return self.postgres.fetch_all(
+            """
+            SELECT c.id AS id_ciclo, c.titulo, LEFT(c.descricao, 500) AS descricao, c.status,
+                   c.data_inicio, c.data_estimada_fim, c.data_fim_real
+            FROM pdca.ciclo c
+            WHERE c.id_empresa = %s
+              AND (
+                    %s = 'ADMIN'
+                    OR EXISTS (
+                        SELECT 1
+                        FROM pdca.usuario_ciclo uc
+                        WHERE uc.id_ciclo = c.id AND uc.id_usuario = %s
+                    )
+              )
+              AND (c.titulo ILIKE %s OR c.descricao ILIKE %s)
+            ORDER BY CASE WHEN c.titulo ILIKE %s THEN 0 ELSE 1 END,
+                     c.atualizado_em DESC NULLS LAST, c.id DESC
+            LIMIT %s;
+            """,
+            (empresa_id, tipo_usuario, usuario_id, pattern, pattern, pattern, limit),
+        )
+
     def tarefas_por_status(self, id_ciclo: int, empresa_id: int) -> list[dict]:
         return self.postgres.fetch_all(
             """

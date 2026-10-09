@@ -127,7 +127,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 40
+            assert len(expected) == 41
             scoped_tools = {
                 "ciclo_visao_geral",
                 "ciclo_problema_principal",

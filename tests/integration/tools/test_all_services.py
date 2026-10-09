@@ -32,7 +32,7 @@ def test_all_task_operations(container, context) -> None:
         lambda: service.consultar(context, id_ciclo=1),
         lambda: service.atrasadas(context, 1),
         lambda: service.concluidas(context, id_ciclo=1),
-        lambda: service.detalhes(context, 1),
+        lambda: service.detalhes(context, 1, 1),
         lambda: service.por_responsavel(context, 1),
         lambda: service.alertas(context, 1),
         lambda: service.relatorio(context, 1),
@@ -44,7 +44,7 @@ def test_all_task_operations(container, context) -> None:
 def test_all_collaborator_operations(container, context) -> None:
     service = container.colaboradores
     operations = [
-        lambda: service.consultar(context),
+        lambda: service.consultar(context, id_ciclo=1),
         lambda: service.detalhes(context, 2, 1),
         lambda: service.participantes(context, 1),
         lambda: service.por_area(context),
@@ -102,11 +102,11 @@ def test_tenant_isolation(container, context) -> None:
     with pytest.raises(AuthorizationError):
         container.ciclos.visao_geral(context, 2)
     with pytest.raises(AuthorizationError):
-        container.tarefas.detalhes(context, 20)
+        container.tarefas.detalhes(context, 20, 2)
     with pytest.raises(AuthorizationError):
-        container.colaboradores.detalhes(context, 20)
+        container.colaboradores.detalhes(context, 20, 2)
 
-    collaborators = container.colaboradores.consultar(context)
+    collaborators = container.colaboradores.consultar(context, id_ciclo=1)
     assert {row["id_empresa"] for row in collaborators["colaboradores"]} == {1}
 
     forms = container.formularios.listar(context, id_ciclo=1)
@@ -118,14 +118,15 @@ def test_tenant_isolation(container, context) -> None:
 def test_all_creation_operations(container, context) -> None:
     from acta_mcp.core.context import RequestContext
 
-    admin = RequestContext(
+    gestor = RequestContext(
         usuario_id=1,
         empresa_id=1,
-        permissoes=frozenset({"admin"}),
+        permissoes=frozenset({"read"}),
         trace_id="creation-integration",
+        tipo_usuario="GESTOR",
     )
     task = container.tarefas.criar(
-        admin,
+        gestor,
         id_ciclo=1,
         id_plano_acao=1,
         id_responsavel=2,
@@ -134,23 +135,31 @@ def test_all_creation_operations(container, context) -> None:
         prioridade="MEDIA",
         data_fim_prevista=date.today() + timedelta(days=30),
     )["tarefa"]
-    assert_ok(container.tarefas.atualizar(admin, id_tarefa=task["id"], prioridade="ALTA"))
+    assert_ok(
+        container.tarefas.atualizar(
+            gestor,
+            id_ciclo=1,
+            id_tarefa=task["id"],
+            prioridade="ALTA",
+        )
+    )
     assert_ok(
         container.tarefas.atualizar_status(
-            admin,
+            gestor,
             id_tarefa=task["id"],
+            id_ciclo=1,
             status="EM_ANDAMENTO",
         )
     )
     form = container.formularios.criar_rascunho(
-        admin,
+        gestor,
         id_ciclo=1,
         titulo="Formulário de integração",
         tipo="TESTE",
     )["formulario"]
     assert_ok(
         container.formularios.adicionar_pergunta(
-            admin,
+            gestor,
             id_ciclo=1,
             id_formulario=form["id_formulario"],
             texto="O processo foi validado?",
@@ -159,7 +168,7 @@ def test_all_creation_operations(container, context) -> None:
     )
     assert_ok(
         container.formularios.publicar(
-            admin,
+            gestor,
             id_ciclo=1,
             id_formulario=form["id_formulario"],
         )
@@ -167,7 +176,7 @@ def test_all_creation_operations(container, context) -> None:
 
     assert_ok(
         container.ciclos.registrar_causa(
-            admin,
+            gestor,
             id_ciclo=1,
             id_problema=1,
             descricao="Falta de revisão sistemática",
@@ -175,7 +184,7 @@ def test_all_creation_operations(container, context) -> None:
     )
     assert_ok(
         container.ciclos.adicionar_item_ishikawa(
-            admin,
+            gestor,
             id_ciclo=1,
             categoria="metodo",
             causa="Revisão sem periodicidade definida",
@@ -184,7 +193,7 @@ def test_all_creation_operations(container, context) -> None:
 
     assert_ok(
         container.treinamentos.criar(
-            admin,
+            gestor,
             id_ciclo=1,
             id_responsavel=1,
             titulo="Treinamento de integração",

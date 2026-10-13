@@ -22,8 +22,7 @@ class ColaboradoresService:
 
     def consultar(self, context: RequestContext, **kwargs) -> dict:
         payload = ColaboradoresQuery(**kwargs)
-        if payload.id_ciclo is not None:
-            self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo)
         rows = self.repository.consultar(payload, context.empresa_id)
         return {"status": "ok", "count": len(rows), "colaboradores": rows}
 
@@ -31,19 +30,22 @@ class ColaboradoresService:
         self,
         context: RequestContext,
         id_colaborador: int,
-        id_ciclo: int | None = None,
+        id_ciclo: int,
     ) -> dict:
+        self.access.ensure_cycle(context, id_ciclo)
         self.access.ensure_collaborator(context, id_colaborador)
-        if id_ciclo is not None:
-            self.access.ensure_cycle(context, id_ciclo)
-        collaborator = self.repository.detalhes(id_colaborador, context.empresa_id)
+        collaborator = self.repository.detalhes(
+            id_colaborador,
+            context.empresa_id,
+            id_ciclo,
+        )
         if collaborator is None:
             raise NotFoundError(f"Nenhum colaborador encontrado com id {id_colaborador}.")
         id_usuario = collaborator["id_usuario"]
         return {
             "status": "ok",
             "colaborador": collaborator,
-            "ciclos": self.repository.ciclos(id_usuario, context.empresa_id),
+            "ciclos": self.repository.ciclos(id_usuario, context.empresa_id, id_ciclo),
             "tarefas": self.repository.tarefas(
                 id_usuario,
                 context.empresa_id,

@@ -22,12 +22,12 @@ def register_treinamento_tools(mcp: FastMCP, container: Container) -> None:
         obrigatorio: bool = True,
         participantes: list[int] | None = None,
     ) -> dict[str, Any]:
-        """Cria um treinamento e vincula participantes autorizados; exige acesso geral."""
+        """Cria um treinamento e vincula participantes autorizados do ciclo."""
         context = get_request_context()
         return execute_tool(
             name="treinamentos_criar",
             audit=audit,
-            minimum_access="geral",
+            minimum_access="create",
             operation=lambda: service.criar(
                 context,
                 id_ciclo=id_ciclo,

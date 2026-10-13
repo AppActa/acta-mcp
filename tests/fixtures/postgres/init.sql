@@ -144,7 +144,6 @@ CREATE TABLE pdca.treinamento (
     descricao TEXT,
     data_treinamento DATE,
     obrigatorio BOOLEAN NOT NULL DEFAULT FALSE,
-    id_anexo_mongo TEXT,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -152,16 +151,20 @@ CREATE TABLE pdca.treinamento (
 CREATE TABLE pdca.anexo (
     id BIGSERIAL PRIMARY KEY,
     id_empresa BIGINT NOT NULL REFERENCES empresa(id),
-    id_ciclo BIGINT REFERENCES pdca.ciclo(id),
-    id_origem BIGINT NOT NULL,
+    id_ciclo BIGINT NOT NULL REFERENCES pdca.ciclo(id),
+    criado_por BIGINT REFERENCES usuario_sistema(id),
+    id_origem BIGINT,
     nome_arquivo TEXT NOT NULL,
     tipo_arquivo TEXT NOT NULL,
     tamanho_arquivo BIGINT NOT NULL,
-    bucket_arquivo TEXT,
-    caminho_arquivo TEXT NOT NULL,
-    status TEXT NOT NULL,
-    categoria TEXT NOT NULL,
-    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    bucket_arquivo TEXT NOT NULL DEFAULT 'acta-arquivos',
+    caminho_arquivo TEXT,
+    status TEXT NOT NULL DEFAULT 'PROCESSANDO',
+    descricao TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    atualizado_em TIMESTAMPTZ,
+    excluido_em TIMESTAMPTZ,
+    categoria TEXT NOT NULL
 );
 
 CREATE TABLE pdca.usuario_treinamento (
@@ -253,9 +256,12 @@ INSERT INTO pdca.verificacao_resultado VALUES (1, 1);
 INSERT INTO pdca.alerta_prazo VALUES
     (1, 1, 2, 'A tarefa Mapear processo está atrasada.', NOW(), NULL);
 
-INSERT INTO pdca.treinamento VALUES
+INSERT INTO pdca.treinamento (
+    id, id_ciclo, id_responsavel, titulo, descricao,
+    data_treinamento, obrigatorio, criado_em, atualizado_em
+) VALUES
     (1, 1, 1, 'Padrão operacional', 'Treinamento do novo fluxo',
-     CURRENT_DATE + 3, TRUE, 'anexo-1', NOW(), NOW());
+     CURRENT_DATE + 3, TRUE, NOW(), NOW());
 
 INSERT INTO pdca.usuario_treinamento VALUES
     (1, 2, TRUE, 'PENDENTE', NULL),

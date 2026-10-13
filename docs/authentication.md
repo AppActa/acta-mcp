@@ -9,31 +9,40 @@ X-Acta-Empresa-Id: 45
 X-Trace-Id: <uuid opcional>
 ```
 
-O Bearer atual funciona como credencial entre serviços. Os IDs devem ser preenchidos pelo backend autenticado do ACTA, nunca por argumentos gerados pelo modelo. A evolução recomendada é substituir a chave estática por validação JWT/OAuth mantendo o mesmo `RequestContext`.
+O Bearer funciona como credencial entre serviços. O backend autenticado do ACTA
+preenche os IDs; ferramentas MCP nunca recebem identidade ou empresa como argumento.
 
-## Níveis de acesso
+## Perfil e acesso
 
-O MCP consulta `usuario_sistema.tipo_usuario` e deriva o nível; o cliente não pode
-escolhê-lo. Cada nível inclui os anteriores:
+O MCP consulta `usuario_sistema` no PostgreSQL e exige que o usuário esteja ativo e
+que `usuario_sistema.id_empresa` coincida com a empresa autenticada. O tipo persistido
+`usuario_sistema.tipo_usuario` é mantido separado do nível de acesso para que a
+autorização de escrita possa ser aplicada a cada ciclo.
 
-| Nível | Capacidades |
-| --- | --- |
-| `read` | Consultar dados autorizados e pesquisar a documentação FAQ. |
-| `create` | Ler, criar e atualizar dados operacionais. |
-| `geral` | Ler, criar, atualizar e excluir; também libera formulários, treinamentos e o contexto consolidado de relatórios. |
-| `admin` | Visão administrativa da empresa, sempre limitada ao `empresa_id` autenticado. |
+| Perfil | Leitura | Criação e edição | Exclusão |
+| --- | --- | --- | --- |
+| `GESTOR` | Ciclos vinculados | Ciclos vinculados | Negada |
+| Outros perfis vinculados | Ciclos vinculados | Negada | Negada |
+| `ADMIN` | Ciclos da própria empresa, mesmo sem vínculo | Negada | Negada |
 
-O mapeamento persistido é `COLABORADOR → read`, `GESTOR → create` e `ADMIN → admin`.
-O nível `geral` permanece na hierarquia das tools, portanto atualmente só é alcançado
-por `ADMIN`. Skills pessoais são gerenciadas pelo ACTA AI, fora do catálogo MCP.
+Cada chamada que acessa dados de ciclo recebe um `id_ciclo` inteiro e confirma no
+PostgreSQL que o ciclo pertence à empresa autenticada. Perfis diferentes de `ADMIN`
+precisam estar vinculados em `pdca.usuario_ciclo`. Um `GESTOR` só pode criar ou editar
+quando também tem esse vínculo; `papel_ciclo` não concede permissão adicional.
 
-As tools `relatorios_contexto_ciclo`, `predicoes_respostas_atipicas` e
-`predicoes_tema_formulario` também exigem `geral`, pois expõem ou processam
-respostas de formulários de forma indireta.
+O nível MCP `create` é uma barreira inicial para tools de escrita. A autorização final
+de escrita é feita pelo serviço de domínio com o perfil consultado no banco e o ciclo
+validado. Isso impede que `ADMIN` herde escrita apenas por seu nível global.
 
-Para ciclos, tarefas, planos e problemas, usuários não administradores também precisam
-estar vinculados ao ciclo em `pdca.usuario_ciclo`. Um administrador pode consultar ciclos
-da própria empresa sem vínculo individual. As queries repetem o filtro de tenant, e os
-filtros MongoDB exigem simultaneamente aliases de ciclo e empresa.
+Tools de leitura de ciclo, incluindo respostas de formulários e contexto de relatório,
+aceitam perfis não gestores que tenham acesso de leitura ao ciclo. Tools de
+exclusão de dados de ciclo não são autorizadas por esta política.
+
+Tools empresariais sem dados de ciclo, como `colaboradores_por_area`, permanecem
+limitadas à empresa autenticada. Tools de FAQ consultam somente documentação pública.
+Skills pessoais são gerenciadas pelo ACTA AI, fora do catálogo MCP.
+
+O `usuario_id` continua sendo informado pelo backend; validar uma identidade Firebase
+ou JWT de usuário final está fora desta mudança.
 
 `ACTA_AUTH_MODE=disabled` é bloqueado quando `ACTA_ENV=production`.

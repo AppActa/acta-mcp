@@ -42,6 +42,38 @@ class CiclosRepository:
             (id_ciclo, empresa_id),
         )
 
+    def buscar_por_descricao(
+        self,
+        *,
+        usuario_id: int,
+        empresa_id: int,
+        tipo_usuario: str | None,
+        termo: str,
+        limit: int,
+    ) -> list[dict]:
+        pattern = f"%{termo.strip()}%"
+        return self.postgres.fetch_all(
+            """
+            SELECT c.id AS id_ciclo, c.titulo, LEFT(c.descricao, 500) AS descricao, c.status,
+                   c.data_inicio, c.data_estimada_fim, c.data_fim_real
+            FROM pdca.ciclo c
+            WHERE c.id_empresa = %s
+              AND (
+                    %s = 'ADMIN'
+                    OR EXISTS (
+                        SELECT 1
+                        FROM pdca.usuario_ciclo uc
+                        WHERE uc.id_ciclo = c.id AND uc.id_usuario = %s
+                    )
+              )
+              AND (c.titulo ILIKE %s OR c.descricao ILIKE %s)
+            ORDER BY CASE WHEN c.titulo ILIKE %s THEN 0 ELSE 1 END,
+                     c.atualizado_em DESC NULLS LAST, c.id DESC
+            LIMIT %s;
+            """,
+            (empresa_id, tipo_usuario, usuario_id, pattern, pattern, pattern, limit),
+        )
+
     def tarefas_por_status(self, id_ciclo: int, empresa_id: int) -> list[dict]:
         return self.postgres.fetch_all(
             """
@@ -259,7 +291,7 @@ class CiclosRepository:
             """
             SELECT
                 tr.id AS id_treinamento, tr.titulo, tr.descricao,
-                tr.data_treinamento, tr.obrigatorio, tr.id_anexo_mongo,
+                tr.data_treinamento, tr.obrigatorio,
                 tr.criado_em, tr.atualizado_em,
                 resp.id AS id_responsavel, resp.nome AS responsavel,
                 resp.email_login AS email_responsavel,
@@ -267,13 +299,36 @@ class CiclosRepository:
                 usuario.email_login AS email_usuario, usuario.tipo_usuario,
                 ut.obrigatorio AS obrigatorio_usuario,
                 ut.status AS status_usuario_treinamento, ut.terminado_em,
-                col.id AS id_colaborador, col.cargo, col.area
+                col.id AS id_colaborador, col.cargo, col.area,
+                anexos.itens AS anexos
             FROM pdca.treinamento tr
             JOIN pdca.ciclo c ON c.id = tr.id_ciclo
             JOIN usuario_sistema resp ON resp.id = tr.id_responsavel
             LEFT JOIN pdca.usuario_treinamento ut ON ut.id_treinamento = tr.id
             LEFT JOIN usuario_sistema usuario ON usuario.id = ut.id_usuario
             LEFT JOIN colaborador col ON col.id_usuario = usuario.id
+            LEFT JOIN LATERAL (
+                SELECT COALESCE(
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'id_anexo', a.id,
+                            'nome_arquivo', a.nome_arquivo,
+                            'tipo_arquivo', a.tipo_arquivo,
+                            'tamanho_arquivo', a.tamanho_arquivo,
+                            'descricao', a.descricao,
+                            'criado_em', a.criado_em
+                        ) ORDER BY a.criado_em DESC
+                    ),
+                    '[]'::jsonb
+                ) AS itens
+                FROM pdca.anexo a
+                WHERE a.id_empresa = c.id_empresa
+                  AND a.id_ciclo = tr.id_ciclo
+                  AND a.id_origem = tr.id
+                  AND a.categoria = 'TREINAMENTO'
+                  AND a.status = 'ATIVO'
+                  AND a.excluido_em IS NULL
+            ) anexos ON TRUE
             WHERE tr.id_ciclo = %s AND c.id_empresa = %s
             ORDER BY tr.data_treinamento ASC, tr.titulo ASC, usuario.nome ASC;
             """,

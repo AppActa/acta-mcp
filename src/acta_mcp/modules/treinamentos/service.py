@@ -13,7 +13,7 @@ class TreinamentosService:
 
     def criar(self, context: RequestContext, **data) -> dict[str, Any]:
         payload = TreinamentoCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         self.access.ensure_user(context, payload.id_responsavel)
         participants = list(dict.fromkeys(payload.participantes))
         for user_id in participants:

@@ -1,10 +1,9 @@
 from collections.abc import Iterable, Sequence
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
-from acta_mcp.core.security import current_access_level
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 
 TAREFA_ID_FIELDS = ("id_tarefa", "tarefa_id", "idTarefa", "tarefaId")
@@ -89,9 +88,40 @@ class AccessService:
         level = level_by_user_type.get(row["tipo_usuario"])
         if level is None:
             raise ValueError("Tipo do usuário autenticado não é reconhecido.")
-        return replace(context, permissoes=frozenset({level}))
+        return replace(
+            context,
+            permissoes=frozenset({level}),
+            tipo_usuario=row["tipo_usuario"],
+        )
 
-    def ensure_cycle(self, context: RequestContext, id_ciclo: int) -> dict[str, Any]:
+    def authorized_cycle_ids(self, context: RequestContext) -> list[int]:
+        if context.tipo_usuario == "ADMIN":
+            rows = self.postgres.fetch_all(
+                "SELECT id FROM pdca.ciclo WHERE id_empresa = %s ORDER BY id;",
+                (context.empresa_id,),
+            )
+        else:
+            rows = self.postgres.fetch_all(
+                """
+                SELECT c.id
+                FROM pdca.ciclo c
+                JOIN pdca.usuario_ciclo uc ON uc.id_ciclo = c.id
+                WHERE uc.id_usuario = %s AND c.id_empresa = %s
+                ORDER BY c.id;
+                """,
+                (context.usuario_id, context.empresa_id),
+            )
+        return [int(row["id"]) for row in rows]
+
+    def ensure_cycle(
+        self,
+        context: RequestContext,
+        id_ciclo: int,
+        *,
+        operation: Literal["read", "write", "delete"] = "read",
+    ) -> dict[str, Any]:
+        if id_ciclo <= 0:
+            raise ValueError("O id_ciclo deve ser positivo.")
         row = self.postgres.fetch_one(
             """
             SELECT c.id, c.id_empresa, c.id_responsavel, uc.papel_ciclo
@@ -106,24 +136,38 @@ class AccessService:
             raise NotFoundError(f"Nenhum ciclo encontrado com id {id_ciclo}.")
         if row["id_empresa"] != context.empresa_id:
             raise AuthorizationError("O usuário não possui acesso a este ciclo.")
-        if current_access_level(context) != "admin" and row.get("papel_ciclo") is None:
+        is_admin = context.tipo_usuario == "ADMIN"
+        if not is_admin and row.get("papel_ciclo") is None:
             raise AuthorizationError("O usuário não está vinculado a este ciclo.")
+        if operation == "delete":
+            raise AuthorizationError("Exclusão de dados do ciclo não é permitida.")
+        if operation == "write" and context.tipo_usuario != "GESTOR":
+            raise AuthorizationError("Somente gestor vinculado pode criar ou editar neste ciclo.")
         return row
 
-    def ensure_task(self, context: RequestContext, id_tarefa: int) -> None:
+    def ensure_task(
+        self,
+        context: RequestContext,
+        id_tarefa: int,
+        id_ciclo: int,
+        *,
+        operation: Literal["read", "write", "delete"] = "read",
+    ) -> None:
+        if id_ciclo <= 0:
+            raise ValueError("O id_ciclo deve ser positivo.")
         row = self.postgres.fetch_one(
             """
             SELECT c.id AS id_ciclo, c.id_empresa
             FROM pdca.tarefa t
             JOIN pdca.plano_acao pa ON pa.id = t.id_plano_acao
             JOIN pdca.ciclo c ON c.id = pa.id_ciclo
-            WHERE t.id = %s;
+            WHERE t.id = %s AND c.id = %s;
             """,
-            (id_tarefa,),
+            (id_tarefa, id_ciclo),
         )
         if row is None:
             raise NotFoundError(f"Nenhuma tarefa encontrada com id {id_tarefa}.")
-        self.ensure_cycle(context, row["id_ciclo"])
+        self.ensure_cycle(context, id_ciclo, operation=operation)
 
     def ensure_collaborator(self, context: RequestContext, id_colaborador: int) -> None:
         row = self.postgres.fetch_one(

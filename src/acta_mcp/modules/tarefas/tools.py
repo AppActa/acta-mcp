@@ -85,13 +85,13 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         )
 
     @mcp.tool(name="tarefas_detalhes", structured_output=True)
-    def tarefas_detalhes(id_tarefa: int) -> dict[str, Any]:
+    def tarefas_detalhes(id_tarefa: int, id_ciclo: int) -> dict[str, Any]:
         """Consulta detalhes, dependências e bloqueios de uma tarefa autorizada."""
         context = get_request_context()
         return execute_tool(
             name="tarefas_detalhes",
             audit=audit,
-            operation=lambda: service.detalhes(context, id_tarefa),
+            operation=lambda: service.detalhes(context, id_tarefa, id_ciclo),
         )
 
     @mcp.tool(name="tarefas_por_responsavel", structured_output=True)
@@ -165,6 +165,7 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
     @mcp.tool(name="tarefas_atualizar", structured_output=True)
     def tarefas_atualizar(
         id_tarefa: int,
+        id_ciclo: int,
         titulo: str | None = None,
         descricao: str | None = None,
         id_responsavel: int | None = None,
@@ -179,6 +180,7 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
             minimum_access="create",
             operation=lambda: service.atualizar(
                 context,
+                id_ciclo=id_ciclo,
                 id_tarefa=id_tarefa,
                 titulo=titulo,
                 descricao=descricao,
@@ -191,6 +193,7 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
     @mcp.tool(name="tarefas_atualizar_status", structured_output=True)
     def tarefas_atualizar_status(
         id_tarefa: int,
+        id_ciclo: int,
         status: Literal[
             "PENDENTE",
             "EM_ANDAMENTO",
@@ -209,6 +212,7 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
             operation=lambda: service.atualizar_status(
                 context,
                 id_tarefa=id_tarefa,
+                id_ciclo=id_ciclo,
                 status=status,
             ),
         )

@@ -51,6 +51,25 @@ class CiclosService:
             ),
         }
 
+    def buscar_por_descricao(
+        self,
+        context: RequestContext,
+        termo: str,
+        limit: int = 5,
+    ) -> dict:
+        normalized = termo.strip()
+        if len(normalized) > 120:
+            raise ValueError("O termo de busca deve ter no máximo 120 caracteres.")
+        safe_limit = max(1, min(limit, 10))
+        ciclos = self.repository.buscar_por_descricao(
+            usuario_id=context.usuario_id,
+            empresa_id=context.empresa_id,
+            tipo_usuario=context.tipo_usuario,
+            termo=normalized,
+            limit=safe_limit,
+        )
+        return {"status": "ok", "count": len(ciclos), "ciclos": ciclos}
+
     def problema_principal(self, context: RequestContext, id_ciclo: int) -> dict:
         self.access.ensure_cycle(context, id_ciclo)
         problema = self.repository.problema_principal(id_ciclo, context.empresa_id)
@@ -131,7 +150,7 @@ class CiclosService:
 
     def registrar_causa(self, context: RequestContext, **data) -> dict:
         payload = CausaCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         self.access.ensure_problem(
             context,
             payload.id_problema,
@@ -156,7 +175,7 @@ class CiclosService:
 
     def adicionar_item_ishikawa(self, context: RequestContext, **data) -> dict:
         payload = IshikawaItemCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         now = datetime.now(UTC)
         document = self.mongo.database["ishikawa"].find_one_and_update(
             {

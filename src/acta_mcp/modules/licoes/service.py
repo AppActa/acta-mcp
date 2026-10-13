@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any
 
+from cloudinary import config as cloudinary_config
+from cloudinary import uploader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from pymongo import ReturnDocument
 from reportlab.lib.pagesizes import A4
@@ -41,7 +43,7 @@ class LicoesService:
         return {"fonte": "relatorios_e_cte", "relatorios": reports, "overview_sql": row}
 
     def criar(self, context: RequestContext, *, id_ciclo: int, contexto: str, expectativa: str) -> dict:
-        self.access.ensure_cycle(context, id_ciclo)
+        self.access.ensure_cycle(context, id_ciclo, operation="write")
         overview = self._overview(context, id_ciclo)
         prompt = ("Crie uma lição aprendida somente com as evidências JSON fornecidas. "
                   "Não invente fatos. Retorne JSON com titulo, licao, categoria, tags (máximo 5).\n"
@@ -59,8 +61,6 @@ class LicoesService:
         self._lessons().insert_one(lesson)
         asset = None
         try:
-            from cloudinary import config as cloudinary_config
-            from cloudinary import uploader
             cloudinary_config(cloud_name=self.settings.cloudinary_cloud_name, api_key=self.settings.cloudinary_api_key,
                               api_secret=self.settings.cloudinary_api_secret, secure=True)
             buffer = BytesIO()
@@ -87,19 +87,15 @@ class LicoesService:
         except Exception:
             self._lessons().delete_one({"id_licao": lesson["id_licao"], "id_empresa": context.empresa_id})
             if asset:
-                from cloudinary import uploader
                 uploader.destroy(asset, resource_type="raw")
             raise
 
-    def _find(self, context: RequestContext, id_ciclo: int | None) -> list[dict]:
-        if id_ciclo is not None:
-            self.access.ensure_cycle(context, id_ciclo)
-        query: dict[str, Any] = {"id_empresa": context.empresa_id}
-        if id_ciclo is not None:
-            query["id_ciclo"] = id_ciclo
+    def _find(self, context: RequestContext, id_ciclo: int) -> list[dict]:
+        self.access.ensure_cycle(context, id_ciclo)
+        query: dict[str, Any] = {"id_empresa": context.empresa_id, "id_ciclo": id_ciclo}
         return list(self._lessons().find(query, {"_id": 0}).sort("criado_em", -1))
 
-    def resumir(self, context: RequestContext, id_ciclo: int | None = None) -> dict:
+    def resumir(self, context: RequestContext, id_ciclo: int) -> dict:
         lessons = self._find(context, id_ciclo)
         if not lessons:
             return {"status": "sem_licoes"}

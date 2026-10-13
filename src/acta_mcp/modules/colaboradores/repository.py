@@ -21,26 +21,22 @@ class ColaboradoresRepository:
                 emp.tamanho_empresa, emp.setor_empresa,
                 emp.status AS status_empresa
         """
-        params: list = []
-        if payload.id_ciclo is not None:
-            query += ", uc.id_ciclo, uc.papel_ciclo"
+        params: list = [payload.id_ciclo]
+        query += ", uc.id_ciclo, uc.papel_ciclo"
         query += """
             FROM colaborador col
             JOIN usuario_sistema us ON us.id = col.id_usuario
             JOIN empresa emp ON emp.id = col.id_empresa
         """
-        if payload.id_ciclo is not None:
-            query += """
-                JOIN pdca.usuario_ciclo uc
-                  ON uc.id_usuario = us.id AND uc.id_ciclo = %s
-                JOIN pdca.ciclo ciclo ON ciclo.id = uc.id_ciclo
-            """
-            params.append(payload.id_ciclo)
+        query += """
+            JOIN pdca.usuario_ciclo uc
+              ON uc.id_usuario = us.id AND uc.id_ciclo = %s
+            JOIN pdca.ciclo ciclo ON ciclo.id = uc.id_ciclo
+        """
         query += " WHERE col.id_empresa = %s"
         params.append(empresa_id)
-        if payload.id_ciclo is not None:
-            query += " AND ciclo.id_empresa = %s"
-            params.append(empresa_id)
+        query += " AND ciclo.id_empresa = %s"
+        params.append(empresa_id)
         for field, value in (
             ("col.nome", normalize_optional_text(payload.nome)),
             ("col.area", normalize_optional_text(payload.area)),
@@ -62,7 +58,7 @@ class ColaboradoresRepository:
         params.append(payload.limit)
         return self.postgres.fetch_all(query, params)
 
-    def detalhes(self, id_colaborador: int, empresa_id: int) -> dict | None:
+    def detalhes(self, id_colaborador: int, empresa_id: int, id_ciclo: int) -> dict | None:
         return self.postgres.fetch_one(
             """
             SELECT
@@ -78,13 +74,16 @@ class ColaboradoresRepository:
             FROM colaborador col
             JOIN usuario_sistema us ON us.id = col.id_usuario
             JOIN empresa emp ON emp.id = col.id_empresa
+            JOIN pdca.usuario_ciclo uc ON uc.id_usuario = us.id
+            JOIN pdca.ciclo c ON c.id = uc.id_ciclo
             WHERE col.id = %s AND col.id_empresa = %s
+              AND uc.id_ciclo = %s AND c.id_empresa = %s
             LIMIT 1;
             """,
-            (id_colaborador, empresa_id),
+            (id_colaborador, empresa_id, id_ciclo, empresa_id),
         )
 
-    def ciclos(self, id_usuario: int, empresa_id: int) -> list[dict]:
+    def ciclos(self, id_usuario: int, empresa_id: int, id_ciclo: int) -> list[dict]:
         return self.postgres.fetch_all(
             """
             SELECT
@@ -93,17 +92,17 @@ class ColaboradoresRepository:
                 c.data_inicio, c.data_estimada_fim, c.data_fim_real
             FROM pdca.usuario_ciclo uc
             JOIN pdca.ciclo c ON c.id = uc.id_ciclo
-            WHERE uc.id_usuario = %s AND c.id_empresa = %s
+            WHERE uc.id_usuario = %s AND c.id_empresa = %s AND c.id = %s
             ORDER BY c.data_inicio DESC, c.id DESC;
             """,
-            (id_usuario, empresa_id),
+            (id_usuario, empresa_id, id_ciclo),
         )
 
     def tarefas(
         self,
         id_usuario: int,
         empresa_id: int,
-        id_ciclo: int | None,
+        id_ciclo: int,
     ) -> list[dict]:
         query = """
             SELECT
@@ -124,9 +123,8 @@ class ColaboradoresRepository:
             WHERE t.id_responsavel = %s AND c.id_empresa = %s
         """
         params: list[int] = [id_usuario, empresa_id]
-        if id_ciclo is not None:
-            query += " AND pa.id_ciclo = %s"
-            params.append(id_ciclo)
+        query += " AND pa.id_ciclo = %s"
+        params.append(id_ciclo)
         query += """
             ORDER BY atrasada_calculada DESC,
                 CASE t.prioridade

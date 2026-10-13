@@ -4,8 +4,8 @@ from psycopg_pool import ConnectionPool
 from pymongo import MongoClient
 
 from acta_mcp.core.config import Settings
+from acta_mcp.infrastructure.audit import AuditLogger
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
-from acta_mcp.infrastructure.observability.audit import AuditLogger
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
 from acta_mcp.modules.common import AccessService
 
@@ -25,7 +25,6 @@ class Container:
     colaboradores: object | None = None
     formularios: object | None = None
     relatorios: object | None = None
-    predicoes: object | None = None
     treinamentos: object | None = None
     licoes: object | None = None
     faq: object | None = None

@@ -9,6 +9,7 @@ class RequestContext:
     empresa_id: int
     permissoes: frozenset[str]
     trace_id: str
+    tipo_usuario: str | None = None
 
 
 _request_context: ContextVar[RequestContext | None] = ContextVar(

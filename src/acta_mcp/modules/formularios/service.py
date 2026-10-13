@@ -300,7 +300,7 @@ class FormulariosService:
             tipo=tipo,
             descricao=descricao,
         )
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         now = datetime.now(UTC)
         document = {
             "_id": str(uuid4()),
@@ -320,7 +320,7 @@ class FormulariosService:
 
     def adicionar_pergunta(self, context: RequestContext, **data) -> dict[str, Any]:
         payload = PerguntaCreate(**data)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         is_selection = payload.tipo_resposta in {"SELECAO_UNICA", "MULTIPLA"}
         if is_selection and not payload.opcoes:
             raise ValueError("Perguntas de seleção devem possuir ao menos uma opção.")
@@ -355,7 +355,7 @@ class FormulariosService:
         id_formulario: str,
     ) -> dict[str, Any]:
         payload = FormularioPublish(id_ciclo=id_ciclo, id_formulario=id_formulario)
-        self.access.ensure_cycle(context, payload.id_ciclo)
+        self.access.ensure_cycle(context, payload.id_ciclo, operation="write")
         current = self.repository.obter_formulario(
             id_ciclo=payload.id_ciclo,
             empresa_id=context.empresa_id,

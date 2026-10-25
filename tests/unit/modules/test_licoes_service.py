@@ -163,8 +163,10 @@ def test_create_generates_pdf_and_compensates_failures(monkeypatch, failure_stag
     database = {"relatorios": reports, "licoes_aprendidas": lessons, "counters": Counters()}
     service, _collection, access, context = make_service([])
     service.mongo = SimpleNamespace(database=database)
+    attachment_calls = []
 
     def create_attachment(**kwargs):
+        attachment_calls.append(kwargs)
         if failure_stage == "attachment":
             raise RuntimeError("attachment failed")
         return {"id_anexo": 31, "url": kwargs["url"]}
@@ -225,5 +227,7 @@ def test_create_generates_pdf_and_compensates_failures(monkeypatch, failure_stag
         == [{"relatorio": "evidência de teste"}] * 5
     )
     assert len(uploaded_files) == 1 and uploaded_files[0].startswith(b"%PDF")
+    assert len(attachment_calls) == 1
+    assert attachment_calls[0]["size"] == len(uploaded_files[0])
     assert lessons.inserted["id_empresa"] == context.empresa_id
     assert access.checked == [(context.empresa_id, 9)]

@@ -28,17 +28,10 @@ def _identifier_variants(identifier: Any) -> list[Any]:
 
 
 def _alias_filter(prefix: str, identifier: int) -> dict[str, Any]:
-    snake = f"id_{prefix}"
-    suffix = f"{prefix}_id"
     camel = prefix.title().replace("_", "")
-    return {
-        "$or": [
-            {snake: {"$in": _identifier_variants(identifier)}},
-            {suffix: {"$in": _identifier_variants(identifier)}},
-            {f"id{camel}": {"$in": _identifier_variants(identifier)}},
-            {f"{prefix.split('_')[0]}Id": {"$in": _identifier_variants(identifier)}},
-        ]
-    }
+    fields = (f"id_{prefix}", f"{prefix}_id", f"id{camel}", f"{prefix.split('_')[0]}Id")
+    variants = _identifier_variants(identifier)
+    return {"$or": [{field: {"$in": variants}} for field in fields]}
 
 
 def _form_filter(identifier: str) -> dict[str, Any]:
@@ -72,6 +65,16 @@ class FormulariosRepository:
         self.mongo = mongo
         self.database = mongo.database
 
+    @staticmethod
+    def _form_scope(id_ciclo: int, empresa_id: int, id_formulario: str) -> dict[str, Any]:
+        return {
+            "$and": [
+                _alias_filter("ciclo", id_ciclo),
+                _alias_filter("empresa", empresa_id),
+                _form_filter(id_formulario),
+            ]
+        }
+
     def listar_formularios(
         self,
         *,
@@ -93,13 +96,7 @@ class FormulariosRepository:
         empresa_id: int,
         id_formulario: str,
     ) -> dict[str, Any] | None:
-        query = {
-            "$and": [
-                _alias_filter("ciclo", id_ciclo),
-                _alias_filter("empresa", empresa_id),
-                _form_filter(id_formulario),
-            ]
-        }
+        query = self._form_scope(id_ciclo, empresa_id, id_formulario)
         document = self.database["formularios"].find_one(query)
         return serialize(document) if document is not None else None
 
@@ -157,15 +154,10 @@ class FormulariosRepository:
         pergunta: dict[str, Any],
         atualizado_em: Any,
     ) -> dict[str, Any] | None:
+        query = self._form_scope(id_ciclo, empresa_id, id_formulario)
+        query["$and"].append({"status": "RASCUNHO"})
         document = self.database["formularios"].find_one_and_update(
-            {
-                "$and": [
-                    _alias_filter("ciclo", id_ciclo),
-                    _alias_filter("empresa", empresa_id),
-                    _form_filter(id_formulario),
-                    {"status": "RASCUNHO"},
-                ]
-            },
+            query,
             {"$push": {"perguntas": pergunta}, "$set": {"atualizado_em": atualizado_em}},
             return_document=ReturnDocument.AFTER,
         )
@@ -180,13 +172,7 @@ class FormulariosRepository:
         atualizado_em: Any,
     ) -> dict[str, Any] | None:
         document = self.database["formularios"].find_one_and_update(
-            {
-                "$and": [
-                    _alias_filter("ciclo", id_ciclo),
-                    _alias_filter("empresa", empresa_id),
-                    _form_filter(id_formulario),
-                ]
-            },
+            self._form_scope(id_ciclo, empresa_id, id_formulario),
             {
                 "$set": {
                     "status": "ATIVO",

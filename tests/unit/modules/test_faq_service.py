@@ -105,3 +105,11 @@ def test_faq_repository_uses_qdrant_vectors_when_configured(monkeypatch):
 def test_faq_search_rejects_invalid_input(question, limit):
     with pytest.raises(ValueError):
         FaqService(Repository()).search(question, limit)
+
+
+@pytest.mark.parametrize("question", ["", "como para qual que uma com", "!!!"])
+def test_faq_lexical_search_without_searchable_terms_returns_no_results(question):
+    settings = Settings(acta_env="test", acta_auth_mode="disabled")
+    repository = FaqRepository(None, settings)
+
+    assert repository.search(question, 3) == []

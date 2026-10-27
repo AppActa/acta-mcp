@@ -1,19 +1,9 @@
-from collections.abc import Iterable, Sequence
 from dataclasses import replace
 from typing import Any, Literal
 
 from acta_mcp.core.context import RequestContext
 from acta_mcp.core.exceptions import AuthorizationError, NotFoundError
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
-
-TAREFA_ID_FIELDS = ("id_tarefa", "tarefa_id", "idTarefa", "tarefaId")
-COLABORADOR_ID_FIELDS = (
-    "id_colaborador",
-    "colaborador_id",
-    "idColaborador",
-    "colaboradorId",
-)
-USUARIO_ID_FIELDS = ("id_usuario", "usuario_id", "idUsuario", "usuarioId")
 
 
 def normalize_optional_text(value: str | None, *, uppercase: bool = False) -> str | None:
@@ -23,39 +13,6 @@ def normalize_optional_text(value: str | None, *, uppercase: bool = False) -> st
     if not normalized:
         return None
     return normalized.upper() if uppercase else normalized
-
-
-def normalize_limit(limit: int | None, default: int = 50, maximum: int = 200) -> int:
-    normalized = limit if limit is not None else default
-    if normalized <= 0:
-        return default
-    return min(normalized, maximum)
-
-
-def filter_documents_by_ids(
-    documents: list[dict],
-    *identifier_filters: tuple[Any | None, Sequence[str]],
-) -> list[dict]:
-    active_filters: list[tuple[str, Iterable[str]]] = [
-        (str(identifier), field_names)
-        for identifier, field_names in identifier_filters
-        if identifier is not None
-    ]
-    if not active_filters:
-        return documents
-    return [
-        document
-        for document in documents
-        if all(
-            expected_id
-            in {
-                str(document[field_name])
-                for field_name in field_names
-                if document.get(field_name) is not None
-            }
-            for expected_id, field_names in active_filters
-        )
-    ]
 
 
 class AccessService:

@@ -1,6 +1,8 @@
 import inspect
 from types import SimpleNamespace
 
+import pytest
+
 import acta_mcp.modules.licoes.service as licoes_service
 from acta_mcp.core.context import RequestContext
 from acta_mcp.modules.licoes.repository import LicoesRepository
@@ -42,7 +44,9 @@ def make_service(records):
     service._model = lambda: SimpleNamespace(
         invoke=lambda _prompt: SimpleNamespace(content="As causas foram verificadas antes da ação.")
     )
-    context = RequestContext(usuario_id=3, empresa_id=4, permissoes=frozenset({"read"}), trace_id="t")
+    context = RequestContext(
+        usuario_id=3, empresa_id=4, permissoes=frozenset({"read"}), trace_id="t"
+    )
     return service, collection, access, context
 
 
@@ -132,7 +136,8 @@ def test_repository_reads_dict_row_factory_results():
     ) == {"id_anexo": 18, "url": "https://example.test/licao.pdf"}
 
 
-def test_create_generates_pdf_and_persists_lesson_and_attachment(monkeypatch):
+@pytest.mark.parametrize("failure_stage", [None, "upload", "attachment"])
+def test_create_generates_pdf_and_compensates_failures(monkeypatch, failure_stage):
     class Collection:
         def __init__(self):
             self.inserted = None
@@ -158,12 +163,22 @@ def test_create_generates_pdf_and_persists_lesson_and_attachment(monkeypatch):
     database = {"relatorios": reports, "licoes_aprendidas": lessons, "counters": Counters()}
     service, _collection, access, context = make_service([])
     service.mongo = SimpleNamespace(database=database)
+    attachment_calls = []
+
+    def create_attachment(**kwargs):
+        attachment_calls.append(kwargs)
+        if failure_stage == "attachment":
+            raise RuntimeError("attachment failed")
+        return {"id_anexo": 31, "url": kwargs["url"]}
+
     service.repository = SimpleNamespace(
         company_name=lambda **_kwargs: "Empresa Teste",
-        create_attachment=lambda **kwargs: {"id_anexo": 31, "url": kwargs["url"]},
+        create_attachment=create_attachment,
     )
     service.settings = SimpleNamespace(
-        gemini_api_key="test", cloudinary_cloud_name="cloud", cloudinary_api_key="key",
+        gemini_api_key="test",
+        cloudinary_cloud_name="cloud",
+        cloudinary_api_key="key",
         cloudinary_api_secret="secret",
     )
     service._model = lambda: SimpleNamespace(
@@ -172,26 +187,47 @@ def test_create_generates_pdf_and_persists_lesson_and_attachment(monkeypatch):
         )
     )
     uploaded_files = []
+    destroyed_assets = []
+
+    def upload(body, **_kwargs):
+        uploaded_files.append(body)
+        if failure_stage == "upload":
+            raise RuntimeError("upload failed")
+        return {
+            "public_id": "empresa-teste/licao-22",
+            "secure_url": "https://example.test/22.pdf",
+        }
+
     cloudinary = SimpleNamespace(
         config=lambda **_kwargs: None,
         uploader=SimpleNamespace(
-            upload=lambda body, **_kwargs: uploaded_files.append(body) or {
-                "public_id": "empresa-teste/licao-22", "secure_url": "https://example.test/22.pdf"
-            },
-            destroy=lambda *_args, **_kwargs: None,
+            upload=upload,
+            destroy=lambda asset, **_kwargs: destroyed_assets.append(asset),
         ),
     )
     monkeypatch.setattr(licoes_service, "cloudinary_config", cloudinary.config)
     monkeypatch.setattr(licoes_service, "uploader", cloudinary.uploader)
+
+    if failure_stage:
+        with pytest.raises(RuntimeError, match=f"{failure_stage} failed"):
+            service.criar(context, id_ciclo=9, contexto="falha", expectativa="evitar recorrência")
+        assert lessons.deleted == [{"id_licao": 22, "id_empresa": context.empresa_id}]
+        expected_assets = ["empresa-teste/licao-22"] if failure_stage == "attachment" else []
+        assert destroyed_assets == expected_assets
+        assert access.checked == [(context.empresa_id, 9)]
+        return
 
     result = service.criar(context, id_ciclo=9, contexto="falha", expectativa="evitar recorrência")
 
     assert result["status"] == "ok"
     assert result["licao"]["id_licao"] == 22
     assert result["anexo"]["id_anexo"] == 31
-    assert reports.find({}, {"_id": 0}).sort("criado_em", -1) == [
-        {"relatorio": "evidência de teste"}
-    ] * 5
+    assert (
+        reports.find({}, {"_id": 0}).sort("criado_em", -1)
+        == [{"relatorio": "evidência de teste"}] * 5
+    )
     assert len(uploaded_files) == 1 and uploaded_files[0].startswith(b"%PDF")
+    assert len(attachment_calls) == 1
+    assert attachment_calls[0]["size"] == len(uploaded_files[0])
     assert lessons.inserted["id_empresa"] == context.empresa_id
     assert access.checked == [(context.empresa_id, 9)]

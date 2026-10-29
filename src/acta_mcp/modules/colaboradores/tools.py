@@ -9,7 +9,6 @@ from acta_mcp.core.tooling import execute_tool
 
 def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
     service = container.colaboradores
-    audit = container.audit
 
     @mcp.tool(name="colaboradores_consultar", structured_output=True)
     def colaboradores_consultar(
@@ -25,8 +24,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta colaboradores da empresa autenticada com filtros opcionais."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_consultar",
-            audit=audit,
             operation=lambda: service.consultar(
                 context,
                 id_ciclo=id_ciclo,
@@ -48,8 +45,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta detalhes profissionais e alocações de um colaborador autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="colaborador_detalhes",
-            audit=audit,
             operation=lambda: service.detalhes(context, id_colaborador, id_ciclo),
         )
 
@@ -61,8 +56,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Lista colaboradores participantes de um ciclo e seus papéis."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_participantes_ciclo",
-            audit=audit,
             operation=lambda: service.participantes(context, id_ciclo, limit),
         )
 
@@ -71,8 +64,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Agrupa colaboradores por área dentro da empresa autenticada."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_por_area",
-            audit=audit,
             operation=lambda: service.por_area(context),
         )
 
@@ -84,8 +75,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Calcula a carga de trabalho dos participantes de um ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_carga_trabalho",
-            audit=audit,
             operation=lambda: service.carga_trabalho(context, id_ciclo, limit),
         )
 
@@ -99,8 +88,6 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Sugere candidatos por menor carga e compatibilidade de área/cargo."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_sugestao_realocacao",
-            audit=audit,
             operation=lambda: service.sugestao_realocacao(
                 context,
                 id_ciclo=id_ciclo,
@@ -118,7 +105,5 @@ def register_colaborador_tools(mcp: FastMCP, container: Container) -> None:
         """Consolida participantes, carga e candidatos para realocação."""
         context = get_request_context()
         return execute_tool(
-            name="colaboradores_relatorio_completo",
-            audit=audit,
             operation=lambda: service.relatorio(context, id_ciclo, limit),
         )

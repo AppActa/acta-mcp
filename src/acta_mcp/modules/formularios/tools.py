@@ -9,7 +9,6 @@ from acta_mcp.core.tooling import execute_tool
 
 def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
     service = container.formularios
-    audit = container.audit
 
     @mcp.tool(name="formularios_listar", structured_output=True)
     def formularios_listar(
@@ -22,8 +21,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Lista formulários autorizados do ciclo com filtros opcionais."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_listar",
-            audit=audit,
             minimum_access="read",
             operation=lambda: service.listar(
                 context,
@@ -44,8 +41,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Obtém a definição de um formulário e suas respostas autorizadas."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_detalhes",
-            audit=audit,
             minimum_access="read",
             operation=lambda: service.detalhes(
                 context,
@@ -64,8 +59,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta respostas de formulários autorizadas para o ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_respostas",
-            audit=audit,
             minimum_access="read",
             operation=lambda: service.respostas(
                 context,
@@ -84,8 +77,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Consolida respostas, frequências e padrões repetidos dos formulários."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_resumo_respostas",
-            audit=audit,
             minimum_access="read",
             operation=lambda: service.resumo_respostas(
                 context,
@@ -105,8 +96,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Cria um formulário em rascunho no ciclo autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_criar_rascunho",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.criar_rascunho(
                 context,
@@ -131,8 +120,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Adiciona uma pergunta estruturada a um formulário rascunho."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_adicionar_pergunta",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.adicionar_pergunta(
                 context,
@@ -150,8 +137,6 @@ def register_formulario_tools(mcp: FastMCP, container: Container) -> None:
         """Publica um formulário autorizado que possua ao menos uma pergunta."""
         context = get_request_context()
         return execute_tool(
-            name="formularios_publicar",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.publicar(
                 context,

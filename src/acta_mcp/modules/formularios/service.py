@@ -264,7 +264,7 @@ class FormulariosService:
                             "campo": field,
                             "valor": display_values[(field, normalized)],
                             "ocorrencias": count,
-                            "percentual_respostas": round(count * 100 / max(len(responses), 1), 2),
+                            "percentual_respostas": round(count * 100 / len(responses), 2),
                         }
                     )
         patterns.sort(key=lambda item: (-item["ocorrencias"], item["campo"]))

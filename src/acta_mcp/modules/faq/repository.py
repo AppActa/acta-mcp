@@ -125,7 +125,7 @@ class FaqRepository:
             )
             overlap = query & terms(searchable)
             if overlap:
-                ranked.append((len(overlap) / max(len(query), 1), document))
+                ranked.append((len(overlap) / len(query), document))
         ranked.sort(key=lambda item: item[0], reverse=True)
         return [
             {

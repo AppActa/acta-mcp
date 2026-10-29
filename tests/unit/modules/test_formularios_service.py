@@ -85,3 +85,15 @@ def test_list_filters_type_and_status() -> None:
 
     assert found["count"] == 1
     assert missing["count"] == 0
+
+
+def test_summary_without_responses_has_no_patterns() -> None:
+    repository = FakeRepository()
+    repository.responses = []
+    service = FormulariosService(repository, FakeAccess())  # type: ignore[arg-type]
+
+    result = service.resumo_respostas(_context(), id_ciclo=1)
+
+    assert result["total_respostas"] == 0
+    assert result["padroes_repetidos"] == []
+    assert result["campos_mais_respondidos"] == []

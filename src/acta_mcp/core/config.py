@@ -14,17 +14,6 @@ def env_str(name: str, default: str | None = None) -> str | None:
     return os.getenv(name, default)
 
 
-def env_bool(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def set_default_env(name: str, value: str) -> None:
-    os.environ.setdefault(name, value)
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",

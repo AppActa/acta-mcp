@@ -10,7 +10,6 @@ from acta_mcp.core.tooling import execute_tool
 
 def register_treinamento_tools(mcp: FastMCP, container: Container) -> None:
     service = container.treinamentos
-    audit = container.audit
 
     @mcp.tool(name="treinamentos_criar", structured_output=True)
     def criar(
@@ -25,8 +24,6 @@ def register_treinamento_tools(mcp: FastMCP, container: Container) -> None:
         """Cria um treinamento e vincula participantes autorizados do ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="treinamentos_criar",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.criar(
                 context,

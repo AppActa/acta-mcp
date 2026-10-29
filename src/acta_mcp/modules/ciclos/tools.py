@@ -9,14 +9,11 @@ from acta_mcp.core.tooling import execute_tool
 
 def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
     service = container.ciclos
-    audit = container.audit
 
     def register(name: str, description: str, method):
         def handler(id_ciclo: int) -> dict[str, Any]:
             context = get_request_context()
             return execute_tool(
-                name=name,
-                audit=audit,
                 operation=lambda: method(context, id_ciclo),
             )
 
@@ -35,8 +32,6 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         """Busca ciclos acessíveis pelo usuário por título ou trecho da descrição."""
         context = get_request_context()
         return execute_tool(
-            name="ciclos_buscar_por_descricao",
-            audit=audit,
             operation=lambda: service.buscar_por_descricao(
                 context,
                 termo=termo,
@@ -60,8 +55,6 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta o diagrama de Ishikawa autorizado do ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="ciclo_ishikawa",
-            audit=audit,
             operation=lambda: service.ishikawa(context, id_ciclo, limit),
         )
 
@@ -98,8 +91,6 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         """Registra uma causa-raiz estruturada em um ciclo autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="ciclos_registrar_causa",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.registrar_causa(
                 context,
@@ -123,8 +114,6 @@ def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
         """Adiciona uma causa a uma categoria permitida do Ishikawa."""
         context = get_request_context()
         return execute_tool(
-            name="ciclos_adicionar_item_ishikawa",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.adicionar_item_ishikawa(
                 context,

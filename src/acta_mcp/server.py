@@ -10,7 +10,6 @@ from starlette.routing import Route
 from acta_mcp.container import Container
 from acta_mcp.core.auth import ActaAuthenticationMiddleware
 from acta_mcp.core.config import Settings
-from acta_mcp.infrastructure.audit import AuditLogger
 from acta_mcp.infrastructure.mongodb.base_repository import MongoRepository
 from acta_mcp.infrastructure.mongodb.connection import create_mongo_client
 from acta_mcp.infrastructure.postgres.base_repository import PostgresRepository
@@ -56,7 +55,6 @@ def create_container(settings: Settings) -> Container:
         postgres=postgres,
         mongo=mongo,
         access=access,
-        audit=AuditLogger(),
     )
     container.ciclos = CiclosService(CiclosRepository(postgres), mongo, access)
     container.tarefas = TarefasService(TarefasRepository(postgres), access)

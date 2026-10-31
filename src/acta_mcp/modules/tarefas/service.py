@@ -21,6 +21,23 @@ class TarefasService:
         self.repository = repository
         self.access = access
 
+    def resumo_entre_ciclos(self, context: RequestContext) -> dict:
+        cycle_ids = self.access.authorized_cycle_ids(context)
+        return self.repository.resumo_entre_ciclos(cycle_ids, context.empresa_id)
+
+    def consultar_entre_ciclos(
+        self, context: RequestContext, *, id_responsavel: int | None = None,
+        status: str | None = None, prioridade: str | None = None, limit: int = 50,
+    ) -> dict:
+        if not 1 <= limit <= 200:
+            raise ValueError("O limite deve estar entre 1 e 200.")
+        cycle_ids = self.access.authorized_cycle_ids(context)
+        rows = self.repository.consultar_entre_ciclos(
+            cycle_ids, context.empresa_id, id_responsavel=id_responsavel,
+            status=status, prioridade=prioridade, limit=limit,
+        )
+        return {"status": "ok", "count": len(rows), "tarefas": rows}
+
     def consultar(
         self,
         context: RequestContext,

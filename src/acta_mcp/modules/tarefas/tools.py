@@ -11,6 +11,26 @@ from acta_mcp.core.tooling import execute_tool
 def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
     service = container.tarefas
 
+    @mcp.tool(name="tarefas_resumo_entre_ciclos", structured_output=True)
+    def tarefas_resumo_entre_ciclos() -> dict[str, Any]:
+        """Mostra totais de tarefas nos ciclos aos quais o usuário autenticado tem acesso."""
+        context = get_request_context()
+        return execute_tool(operation=lambda: service.resumo_entre_ciclos(context))
+
+    @mcp.tool(name="tarefas_consultar_entre_ciclos", structured_output=True)
+    def tarefas_consultar_entre_ciclos(
+        id_responsavel: int | None = None,
+        status: Literal["PENDENTE", "EM_ANDAMENTO", "BLOQUEADA", "CONCLUIDA", "ATRASADA", "CANCELADA"] | None = None,
+        prioridade: Literal["BAIXA", "MEDIA", "ALTA", "CRITICA"] | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Consulta tarefas entre ciclos autorizados, com resultado limitado e id_ciclo por item."""
+        context = get_request_context()
+        return execute_tool(operation=lambda: service.consultar_entre_ciclos(
+            context, id_responsavel=id_responsavel, status=status,
+            prioridade=prioridade, limit=limit,
+        ))
+
     @mcp.tool(name="tarefas_consultar", structured_output=True)
     def tarefas_consultar(
         id_ciclo: int,

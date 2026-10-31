@@ -13,6 +13,9 @@ from acta_mcp.server import build_application
 pytestmark = [pytest.mark.contract, pytest.mark.integration]
 
 TOOL_ARGUMENTS = {
+    "tarefas_resumo_entre_ciclos": {},
+    "tarefas_consultar_entre_ciclos": {"limit": 10},
+    "licoes_listar_entre_ciclos": {"limit": 10},
     "ciclo_visao_geral": {"id_ciclo": 1},
     "ciclo_problema_principal": {"id_ciclo": 1},
     "ciclo_causas_raiz": {"id_ciclo": 1},
@@ -76,6 +79,8 @@ TOOL_ARGUMENTS = {
     },
     "licoes_resumir": {"id_ciclo": 1},
     "licoes_perguntar": {"id_ciclo": 1, "pergunta": "O que aprendemos?"},
+    "licoes_resumir_entre_ciclos": {"limit": 20},
+    "licoes_perguntar_entre_ciclos": {"pergunta": "O que aprendemos?", "limit": 20},
     "faq_retriever": {"question": "Como funciona o PDCA?", "limit": 3},
 }
 
@@ -127,7 +132,7 @@ async def test_list_tools_and_call_tool(mcp_url) -> None:
             listed = await session.list_tools()
             expected = {name for tools in TOOL_CATALOG.values() for name in tools}
             assert {tool.name for tool in listed.tools} == expected
-            assert len(expected) == 41
+            assert len(expected) == 46
             scoped_tools = {
                 "ciclo_visao_geral",
                 "ciclo_problema_principal",

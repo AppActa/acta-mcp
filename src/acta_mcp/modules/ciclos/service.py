@@ -82,16 +82,10 @@ class CiclosService:
         causas = self.repository.causas_raiz(id_ciclo, context.empresa_id)
         return {"status": "ok", "count": len(causas), "causas_raiz": causas}
 
-    def _mongo_collection(
-        self,
-        context: RequestContext,
-        id_ciclo: int,
-        collection: str,
-        limit: int,
-    ) -> dict:
+    def ishikawa(self, context: RequestContext, id_ciclo: int, limit: int = 10) -> dict:
         self.access.ensure_cycle(context, id_ciclo)
         documents = self.mongo.find_by_ciclo(
-            collection=collection,
+            collection="ishikawa",
             id_ciclo=id_ciclo,
             empresa_id=context.empresa_id,
             limit=limit,
@@ -102,9 +96,6 @@ class CiclosService:
             "count": len(documents),
             "documentos": documents,
         }
-
-    def ishikawa(self, context: RequestContext, id_ciclo: int, limit: int = 10) -> dict:
-        return self._mongo_collection(context, id_ciclo, "ishikawa", limit)
 
     def riscos_pendencias(self, context: RequestContext, id_ciclo: int) -> dict:
         self.access.ensure_cycle(context, id_ciclo)

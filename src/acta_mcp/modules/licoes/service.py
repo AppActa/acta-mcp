@@ -151,6 +151,52 @@ class LicoesService:
         query: dict[str, Any] = {"id_empresa": context.empresa_id, "id_ciclo": id_ciclo}
         return list(self._lessons().find(query, {"_id": 0}).sort("criado_em", -1))
 
+    def _find_entre_ciclos(self, context: RequestContext, limit: int, offset: int = 0) -> list[dict]:
+        if not 1 <= limit <= 200:
+            raise ValueError("O limite deve estar entre 1 e 200.")
+        if offset < 0:
+            raise ValueError("O offset não pode ser negativo.")
+        cycle_ids = self.access.authorized_cycle_ids(context)
+        if not cycle_ids:
+            return []
+        query = {"id_empresa": context.empresa_id, "id_ciclo": {"$in": cycle_ids}}
+        return list(
+            self._lessons().find(query, {"_id": 0}).sort("criado_em", -1)
+            .skip(offset).limit(limit + 1)
+        )
+
+    def listar_entre_ciclos(self, context: RequestContext, *, limit: int = 50, offset: int = 0) -> dict:
+        lessons = self._find_entre_ciclos(context, limit, offset)
+        has_more = len(lessons) > limit
+        lessons = lessons[:limit]
+        return {"status": "ok", "count": len(lessons), "offset": offset,
+                "has_more": has_more, "licoes": lessons}
+
+    def resumir_entre_ciclos(self, context: RequestContext, *, limit: int = 200) -> dict:
+        lessons = self._find_entre_ciclos(context, limit)
+        if not lessons:
+            return {"status": "sem_licoes"}
+        response = self._model().invoke(
+            "Resuma em português, sem inventar e usando apenas estas lições: "
+            + json.dumps(lessons, ensure_ascii=False, default=str)
+        )
+        return {"status": "ok", "resumo": str(response.content).strip(), "referencias": [
+            {"id_licao": item["id_licao"], "id_ciclo": item["id_ciclo"]} for item in lessons
+        ]}
+
+    def perguntar_entre_ciclos(self, context: RequestContext, *, pergunta: str, limit: int = 200) -> dict:
+        lessons = self._find_entre_ciclos(context, limit)
+        if not lessons:
+            return {"status": "sem_evidencia"}
+        response = self._model().invoke(
+            "Responda em português usando somente as lições JSON. Se não houver evidência suficiente, "
+            "responda que não há evidência suficiente.\nPergunta: "
+            + pergunta + "\nLições: " + json.dumps(lessons, ensure_ascii=False, default=str)
+        )
+        return {"status": "ok", "resposta": str(response.content).strip(), "referencias": [
+            {"id_licao": item["id_licao"], "id_ciclo": item["id_ciclo"]} for item in lessons
+        ]}
+
     def resumir(self, context: RequestContext, id_ciclo: int) -> dict:
         lessons = self._find(context, id_ciclo)
         if not lessons:

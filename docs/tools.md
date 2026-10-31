@@ -7,12 +7,12 @@ modelo.
 | Domínio | Operações |
 | --- | --- |
 | Ciclos | Busca de ciclos acessíveis por título ou descrição; consultas de visão geral, problemas, Ishikawa, riscos, participantes e treinamentos; registro de causas e itens. |
-| Tarefas | Consultas, atrasos, detalhes, responsáveis, alertas, relatórios, criação e edição. |
+| Tarefas | Consultas por ciclo, resumo total entre ciclos autorizados, consulta limitada entre ciclos, atrasos, detalhes, responsáveis, alertas, relatórios, criação e edição. |
 | Colaboradores | Consultas e detalhes vinculados ao ciclo, participação, carga e sugestão de realocação; `colaboradores_por_area` é empresarial. |
 | Formulários | Leitura de formulários e respostas, criação de rascunhos, perguntas e publicação. |
 | Relatórios | Contexto consolidado de um ciclo para geração pelo ACTA AI. |
 | Treinamentos | Criação de treinamento e vinculação de participantes. |
-| Lições aprendidas | Criação baseada em evidências do ciclo com PDF/anexo, resumo e perguntas com referências. |
+| Lições aprendidas | Criação baseada em evidências do ciclo com PDF/anexo, listagem, resumo e perguntas por ciclo ou entre ciclos autorizados com referências. |
 | FAQ | `faq_retriever` pesquisa documentação conceitual do ACTA/PDCA usando Qdrant ou busca lexical local. |
 
 ## Escopo e autorização
@@ -23,8 +23,13 @@ modelo.
   obrigatório e confirma esse ciclo no PostgreSQL antes de acessar seus dados.
 - As tools de tarefa por `id_tarefa` também recebem o `id_ciclo`; a tarefa deve pertencer
   exatamente ao ciclo informado.
-- Consultas de colaboradores, detalhes e resumo de lições não aceitam ciclo ausente e
-  não ampliam a busca para todos os dados da empresa.
+- As tools `tarefas_resumo_entre_ciclos`, `tarefas_consultar_entre_ciclos`,
+  `licoes_listar_entre_ciclos`, `licoes_resumir_entre_ciclos` e
+  `licoes_perguntar_entre_ciclos` são leituras explícitas entre ciclos. O servidor deriva
+  a lista de ciclos autorizados do usuário autenticado; nenhum argumento do modelo define
+  empresa ou ciclos. Listas têm limite máximo e cada tarefa/lição inclui `id_ciclo`.
+- As tools de consultas por ciclo continuam exigindo `id_ciclo`; consultas de colaboradores,
+  detalhes e demais dados não ampliam a busca para todos os ciclos da empresa.
 - O perfil `GESTOR` pode criar e editar dados apenas em ciclos aos quais está vinculado.
   Outros perfis vinculados e `ADMIN` podem somente ler. `ADMIN` pode ler ciclos da própria
   empresa sem vínculo individual. Exclusão de dados de ciclo é negada.

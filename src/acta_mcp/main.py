@@ -4,7 +4,6 @@ import uvicorn
 
 from acta_mcp.core.config import get_settings
 from acta_mcp.core.context import build_context, reset_request_context, set_request_context
-from acta_mcp.core.logging import configure_logging
 from acta_mcp.server import build_application
 
 
@@ -19,7 +18,6 @@ def main() -> None:
     args = parser.parse_args()
 
     settings = get_settings()
-    configure_logging(settings.acta_log_level)
     mcp, app, container = build_application(settings)
 
     if args.transport == "stdio":

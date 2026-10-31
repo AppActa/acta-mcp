@@ -75,6 +75,58 @@ class TarefasRepository:
         params.append(query_input.limit)
         return self.postgres.fetch_all(query, params)
 
+    def resumo_entre_ciclos(self, cycle_ids: list[int], empresa_id: int) -> dict:
+        rows = self.postgres.fetch_all(
+            """
+            SELECT pa.id_ciclo,
+                COUNT(t.id) AS total,
+                COUNT(*) FILTER (WHERE t.status = 'PENDENTE') AS pendentes,
+                COUNT(*) FILTER (WHERE t.status = 'EM_ANDAMENTO') AS em_andamento,
+                COUNT(*) FILTER (WHERE t.status = 'BLOQUEADA') AS bloqueadas,
+                COUNT(*) FILTER (WHERE t.status = 'CONCLUIDA') AS concluidas,
+                COUNT(*) FILTER (WHERE t.status = 'CANCELADA') AS canceladas,
+                COUNT(*) FILTER (WHERE t.status = 'ATRASADA' OR
+                    (t.data_fim_prevista < CURRENT_DATE AND t.status NOT IN ('CONCLUIDA', 'CANCELADA')))
+                    AS atrasadas
+            FROM pdca.tarefa t
+            JOIN pdca.plano_acao pa ON pa.id = t.id_plano_acao
+            JOIN pdca.ciclo c ON c.id = pa.id_ciclo
+            WHERE c.id_empresa = %s AND c.id = ANY(%s)
+            GROUP BY pa.id_ciclo ORDER BY pa.id_ciclo;
+            """,
+            (empresa_id, cycle_ids),
+        ) if cycle_ids else []
+        totals = {key: sum(int(row.get(key, 0)) for row in rows) for key in (
+            "total", "pendentes", "em_andamento", "bloqueadas", "concluidas", "canceladas", "atrasadas"
+        )}
+        return {"status": "ok", "total_ciclos": len(cycle_ids), "totais": totals, "por_ciclo": rows}
+
+    def consultar_entre_ciclos(self, cycle_ids: list[int], empresa_id: int, *,
+                               id_responsavel: int | None = None, status: str | None = None,
+                               prioridade: str | None = None, limit: int = 50) -> list[dict]:
+        if not cycle_ids:
+            return []
+        query = """
+            SELECT t.id, t.titulo, t.descricao, t.prioridade, t.status,
+                t.data_inicio_real, t.data_fim_prevista, t.data_fim_real,
+                pa.id AS id_plano_acao, pa.nome AS plano_acao, pa.id_ciclo,
+                resp.id AS id_responsavel, resp.nome AS responsavel
+            FROM pdca.tarefa t
+            JOIN pdca.plano_acao pa ON pa.id = t.id_plano_acao
+            JOIN pdca.ciclo c ON c.id = pa.id_ciclo
+            JOIN usuario_sistema resp ON resp.id = t.id_responsavel
+            WHERE c.id_empresa = %s AND c.id = ANY(%s)
+        """
+        params: list = [empresa_id, cycle_ids]
+        for field, value in (("t.id_responsavel", id_responsavel), ("t.status", status),
+                             ("t.prioridade", prioridade)):
+            if value is not None:
+                query += f" AND {field} = %s"
+                params.append(value)
+        query += " ORDER BY t.data_fim_prevista ASC, t.criado_em ASC LIMIT %s"
+        params.append(limit)
+        return self.postgres.fetch_all(query, params)
+
     def detalhes(self, id_tarefa: int, empresa_id: int) -> dict | None:
         return self.postgres.fetch_one(
             """

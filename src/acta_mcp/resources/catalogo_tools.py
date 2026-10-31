@@ -13,6 +13,8 @@ TOOL_CATALOG = {
         "ciclos_adicionar_item_ishikawa",
     ],
     "tarefas": [
+        "tarefas_resumo_entre_ciclos",
+        "tarefas_consultar_entre_ciclos",
         "tarefas_consultar",
         "tarefas_atrasadas",
         "tarefas_concluidas",
@@ -46,6 +48,10 @@ TOOL_CATALOG = {
         "relatorios_contexto_ciclo",
     ],
     "treinamentos": ["treinamentos_criar"],
-    "licoes": ["licoes_criar", "licoes_resumir", "licoes_perguntar"],
+    "licoes": [
+        "licoes_criar", "licoes_resumir", "licoes_perguntar",
+        "licoes_listar_entre_ciclos", "licoes_resumir_entre_ciclos",
+        "licoes_perguntar_entre_ciclos",
+    ],
     "faq": ["faq_retriever"],
 }

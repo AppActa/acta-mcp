@@ -98,7 +98,7 @@ class FormulariosRepository:
     ) -> dict[str, Any] | None:
         query = self._form_scope(id_ciclo, empresa_id, id_formulario)
         document = self.database["formularios"].find_one(query)
-        return serialize(document) if document is not None else None
+        return serialize(document)
 
     def listar_respostas(
         self,
@@ -161,7 +161,7 @@ class FormulariosRepository:
             {"$push": {"perguntas": pergunta}, "$set": {"atualizado_em": atualizado_em}},
             return_document=ReturnDocument.AFTER,
         )
-        return serialize(document) if document is not None else None
+        return serialize(document)
 
     def publicar(
         self,
@@ -182,4 +182,4 @@ class FormulariosRepository:
             },
             return_document=ReturnDocument.AFTER,
         )
-        return serialize(document) if document is not None else None
+        return serialize(document)

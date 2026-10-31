@@ -10,7 +10,26 @@ from acta_mcp.core.tooling import execute_tool
 
 def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
     service = container.tarefas
-    audit = container.audit
+
+    @mcp.tool(name="tarefas_resumo_entre_ciclos", structured_output=True)
+    def tarefas_resumo_entre_ciclos() -> dict[str, Any]:
+        """Mostra totais de tarefas nos ciclos aos quais o usuário autenticado tem acesso."""
+        context = get_request_context()
+        return execute_tool(operation=lambda: service.resumo_entre_ciclos(context))
+
+    @mcp.tool(name="tarefas_consultar_entre_ciclos", structured_output=True)
+    def tarefas_consultar_entre_ciclos(
+        id_responsavel: int | None = None,
+        status: Literal["PENDENTE", "EM_ANDAMENTO", "BLOQUEADA", "CONCLUIDA", "ATRASADA", "CANCELADA"] | None = None,
+        prioridade: Literal["BAIXA", "MEDIA", "ALTA", "CRITICA"] | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Consulta tarefas entre ciclos autorizados, com resultado limitado e id_ciclo por item."""
+        context = get_request_context()
+        return execute_tool(operation=lambda: service.consultar_entre_ciclos(
+            context, id_responsavel=id_responsavel, status=status,
+            prioridade=prioridade, limit=limit,
+        ))
 
     @mcp.tool(name="tarefas_consultar", structured_output=True)
     def tarefas_consultar(
@@ -34,8 +53,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta tarefas autorizadas de um ciclo com filtros opcionais."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_consultar",
-            audit=audit,
             operation=lambda: service.consultar(
                 context,
                 id_ciclo=id_ciclo,
@@ -54,8 +71,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Lista tarefas atrasadas ou vencidas de um ciclo autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_atrasadas",
-            audit=audit,
             operation=lambda: service.atrasadas(context, id_ciclo, limit),
         )
 
@@ -71,8 +86,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Lista tarefas concluídas de um ciclo autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_concluidas",
-            audit=audit,
             operation=lambda: service.concluidas(
                 context,
                 id_ciclo=id_ciclo,
@@ -89,8 +102,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta detalhes, dependências e bloqueios de uma tarefa autorizada."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_detalhes",
-            audit=audit,
             operation=lambda: service.detalhes(context, id_tarefa, id_ciclo),
         )
 
@@ -102,8 +113,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Agrupa tarefas por responsável e status no ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_por_responsavel",
-            audit=audit,
             operation=lambda: service.por_responsavel(
                 context,
                 id_ciclo,
@@ -119,8 +128,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Consulta alertas de prazo das tarefas do ciclo."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_alertas_prazo",
-            audit=audit,
             operation=lambda: service.alertas(context, id_ciclo, somente_nao_lidos),
         )
 
@@ -129,8 +136,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Consolida tarefas, atrasos, responsáveis e alertas de prazo."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_relatorio_completo",
-            audit=audit,
             operation=lambda: service.relatorio(context, id_ciclo, limit),
         )
 
@@ -147,8 +152,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Cria uma tarefa pendente em um plano de ação autorizado."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_criar",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.criar(
                 context,
@@ -175,8 +178,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Atualiza campos permitidos de uma tarefa autorizada."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_atualizar",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.atualizar(
                 context,
@@ -206,8 +207,6 @@ def register_tarefa_tools(mcp: FastMCP, container: Container) -> None:
         """Atualiza o status e as datas operacionais de uma tarefa."""
         context = get_request_context()
         return execute_tool(
-            name="tarefas_atualizar_status",
-            audit=audit,
             minimum_access="create",
             operation=lambda: service.atualizar_status(
                 context,

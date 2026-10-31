@@ -13,13 +13,29 @@ class LessonsCollection:
     def __init__(self, records):
         self.records = records
         self.query = None
+        self.offset = 0
+        self.page_size = None
 
     def find(self, query, _projection):
         self.query = query
         return self
 
     def sort(self, *_args):
-        return self.records
+        return self
+
+    def limit(self, limit):
+        self.page_size = limit
+        return self
+
+    def skip(self, offset):
+        self.offset = offset
+        return self
+
+    def __iter__(self):
+        records = self.records[self.offset :]
+        if self.page_size is not None:
+            records = records[: self.page_size]
+        return iter(records)
 
 
 class Access:
@@ -28,6 +44,9 @@ class Access:
 
     def ensure_cycle(self, context, cycle_id, *, operation="read"):
         self.checked.append((context.empresa_id, cycle_id))
+
+    def authorized_cycle_ids(self, _context):
+        return [9, 10]
 
 
 def test_lesson_summary_requires_cycle_argument():
@@ -81,6 +100,43 @@ def test_summary_reads_only_authorized_cycle_lessons():
     assert collection.query == {"id_empresa": 4, "id_ciclo": 9}
     assert access.checked == [(4, 9)]
     assert result["status"] == "ok"
+
+
+def test_cross_cycle_listing_limits_to_authorized_cycles():
+    lessons = [{"id_licao": 33, "id_ciclo": 9}, {"id_licao": 34, "id_ciclo": 10}]
+    service, collection, _access, context = make_service(lessons)
+
+    result = service.listar_entre_ciclos(context, limit=20, offset=0)
+
+    assert collection.query == {"id_empresa": 4, "id_ciclo": {"$in": [9, 10]}}
+    assert result == {
+        "status": "ok", "count": 2, "offset": 0, "has_more": False, "licoes": lessons
+    }
+
+
+def test_cross_cycle_listing_reports_more_pages():
+    lessons = [
+        {"id_licao": 33, "id_ciclo": 9},
+        {"id_licao": 34, "id_ciclo": 10},
+        {"id_licao": 35, "id_ciclo": 10},
+    ]
+    service, _collection, _access, context = make_service(lessons)
+
+    result = service.listar_entre_ciclos(context, limit=2)
+
+    assert result["count"] == 2
+    assert result["has_more"] is True
+    assert result["licoes"] == lessons[:2]
+
+
+def test_cross_cycle_question_returns_cycle_in_references():
+    lessons = [{"id_licao": 33, "id_ciclo": 9, "licao": "Evidência"}]
+    service, collection, _access, context = make_service(lessons)
+
+    result = service.perguntar_entre_ciclos(context, pergunta="O que aprendemos?")
+
+    assert collection.query == {"id_empresa": 4, "id_ciclo": {"$in": [9, 10]}}
+    assert result["referencias"] == [{"id_licao": 33, "id_ciclo": 9}]
 
 
 def test_repository_reads_dict_row_factory_results():

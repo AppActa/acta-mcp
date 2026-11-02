@@ -10,6 +10,12 @@ from acta_mcp.core.tooling import execute_tool
 def register_ciclo_tools(mcp: FastMCP, container: Container) -> None:
     service = container.ciclos
 
+    @mcp.tool(name="ciclos_listar", structured_output=True)
+    def ciclos_listar() -> dict[str, Any]:
+        """Lista os ciclos autorizados ao usuário autenticado."""
+        context = get_request_context()
+        return execute_tool(operation=lambda: service.listar(context))
+
     def register(name: str, description: str, method):
         def handler(id_ciclo: int) -> dict[str, Any]:
             context = get_request_context()

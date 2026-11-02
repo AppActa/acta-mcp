@@ -94,11 +94,6 @@ class FaqRepository:
             )
         return results
 
-    def ping(self) -> bool:
-        if self.client is not None:
-            self.client.get_collections()
-        return True
-
     @staticmethod
     def _lexical_search(question: str, limit: int) -> list[dict[str, Any]]:
         def terms(value: str) -> set[str]:

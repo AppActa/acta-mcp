@@ -22,6 +22,14 @@ class CiclosService:
         self.mongo = mongo
         self.access = access
 
+    def listar(self, context: RequestContext) -> dict:
+        ciclos = self.repository.listar_autorizados(
+            usuario_id=context.usuario_id,
+            empresa_id=context.empresa_id,
+            tipo_usuario=context.tipo_usuario,
+        )
+        return {"status": "ok", "count": len(ciclos), "ciclos": ciclos}
+
     def visao_geral(self, context: RequestContext, id_ciclo: int) -> dict:
         self.access.ensure_cycle(context, id_ciclo)
         ciclo = self.repository.visao_geral(id_ciclo, context.empresa_id)

@@ -26,6 +26,3 @@ class FaqService:
         self.ensure_index()
         results = self.repository.search(question, limit)
         return {"status": "ok", "count": len(results), "resultados": results}
-
-    def ping(self) -> bool:
-        return self.repository.ping()

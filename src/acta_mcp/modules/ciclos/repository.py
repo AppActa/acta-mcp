@@ -5,6 +5,25 @@ class CiclosRepository:
     def __init__(self, postgres: PostgresRepository) -> None:
         self.postgres = postgres
 
+    def listar_autorizados(self, *, usuario_id: int, empresa_id: int, tipo_usuario: str | None) -> list[dict]:
+        return self.postgres.fetch_all(
+            """
+            SELECT c.id AS id_ciclo, c.titulo, c.status,
+                   c.data_inicio, c.data_estimada_fim
+            FROM pdca.ciclo c
+            WHERE c.id_empresa = %s
+              AND (
+                    %s = 'ADMIN'
+                    OR EXISTS (
+                        SELECT 1 FROM pdca.usuario_ciclo uc
+                        WHERE uc.id_ciclo = c.id AND uc.id_usuario = %s
+                    )
+              )
+            ORDER BY c.atualizado_em DESC NULLS LAST, c.id DESC;
+            """,
+            (empresa_id, tipo_usuario, usuario_id),
+        )
+
     def visao_geral(self, id_ciclo: int, empresa_id: int) -> dict | None:
         return self.postgres.fetch_one(
             """

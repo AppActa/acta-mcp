@@ -47,7 +47,16 @@ def create_container(settings: Settings) -> Container:
     postgres = PostgresRepository(postgres_pool)
     mongo = MongoRepository(mongo_client[settings.mongodb_database])
     access = AccessService(postgres)
-    container = Container(
+    ciclos = CiclosService(CiclosRepository(postgres), mongo, access)
+    tarefas = TarefasService(TarefasRepository(postgres), access)
+    colaboradores = ColaboradoresService(ColaboradoresRepository(postgres), access)
+    formularios = FormulariosService(FormulariosRepository(mongo), access)
+    treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
+    licoes = LicoesService(mongo, LicoesRepository(postgres_pool), access, settings)
+    faq = FaqService(FaqRepository(qdrant_client, settings))
+    relatorios = RelatoriosService(access, ciclos, tarefas, colaboradores, formularios)
+
+    return Container(
         settings=settings,
         postgres_pool=postgres_pool,
         mongo_client=mongo_client,
@@ -55,25 +64,15 @@ def create_container(settings: Settings) -> Container:
         postgres=postgres,
         mongo=mongo,
         access=access,
+        ciclos=ciclos,
+        tarefas=tarefas,
+        colaboradores=colaboradores,
+        formularios=formularios,
+        relatorios=relatorios,
+        treinamentos=treinamentos,
+        licoes=licoes,
+        faq=faq,
     )
-    container.ciclos = CiclosService(CiclosRepository(postgres), mongo, access)
-    container.tarefas = TarefasService(TarefasRepository(postgres), access)
-    container.colaboradores = ColaboradoresService(
-        ColaboradoresRepository(postgres),
-        access,
-    )
-    container.formularios = FormulariosService(FormulariosRepository(mongo), access)
-    container.relatorios = RelatoriosService(
-        access,
-        container.ciclos,
-        container.tarefas,
-        container.colaboradores,
-        container.formularios,
-    )
-    container.treinamentos = TreinamentosService(TreinamentosRepository(postgres), access)
-    container.licoes = LicoesService(mongo, LicoesRepository(postgres_pool), access, settings)
-    container.faq = FaqService(FaqRepository(qdrant_client, settings))
-    return container
 
 
 def create_mcp_server(settings: Settings, container: Container) -> FastMCP:
